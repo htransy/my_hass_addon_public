@@ -1,6 +1,6 @@
 name: "AI Proxy Router"
 description: "Quản lý xoay vòng API Key và đăng nhập OpenAI Codex OAuth trực tiếp. Tự động định tuyến Text/Vision và theo dõi Analytics."
-version: "1.6.0"
+version: "1.7.3"
 slug: "ai_proxy_router"
 init: false
 arch:
