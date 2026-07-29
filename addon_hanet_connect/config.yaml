@@ -1,0 +1,44 @@
+name: HANET Connect Gateway
+version: "0.9.0"
+slug: hanet_connect
+description: HANET camera, access control, FaceID, LPR and attendance gateway
+arch:
+  - amd64
+  - aarch64
+  - armv7
+startup: application
+boot: auto
+init: false
+stage: experimental
+ingress: true
+ingress_port: 9091
+ingress_stream: true
+panel_icon: mdi:cctv
+panel_title: HANET Connect
+panel_admin: true
+watchdog: http://[HOST]:[PORT:9091]/health
+ports:
+  9091/tcp: null
+ports_description:
+  9091/tcp: Optional authenticated gateway and webhook port
+options:
+  username: ""
+  password: ""
+  api_base_url: https://api-camera3.hanet.ai/v4
+  api_access_key: ""
+  webhook_secret: ""
+  poll_interval: 30
+  event_stream: true
+  verify_tls: true
+  log_level: info
+schema:
+  username: str
+  password: password
+  api_base_url: url
+  api_access_key: password?
+  webhook_secret: password?
+  poll_interval: int(15,3600)
+  event_stream: bool
+  verify_tls: bool
+  log_level: list(debug|info|warning|error)
+image: "ghcr.io/trankhanhduy2929-beep/addon_hanet_connect-{arch}"
