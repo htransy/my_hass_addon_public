@@ -1,12 +1,12 @@
 # Ecovacs China Backend cho Home Assistant
 
-Ecovacs China Backend `1.0.12` là hệ thống điều khiển robot Ecovacs tài khoản
+Ecovacs China Backend `1.1.0` là hệ thống điều khiển robot Ecovacs tài khoản
 Trung Quốc theo kiến trúc tách rời:
 
 - **Add-on** xử lý đăng nhập Ecovacs, cloud REST, MQTT, trạng thái, bản đồ và
   lệnh điều khiển trên cổng nội bộ `4545`.
-- **Custom integration** chỉ đọc dữ liệu nội bộ từ add-on và tạo sensor, ảnh bản
-  đồ SVG cùng các button được add-on cho phép.
+- **Custom integration** chỉ đọc dữ liệu nội bộ từ add-on và tạo entity chuẩn
+  Home Assistant theo capability an toàn mà add-on quảng bá.
 
 Tài khoản Ecovacs không được nhập hoặc lưu trong config entry của custom
 integration. Đây không phải phần mềm chính thức của Ecovacs.
@@ -25,7 +25,8 @@ Ecovacs Backend add-on :4545
             │ API token nội bộ
             ▼
 Custom integration
-  ├─ sensor
+  ├─ vacuum / lawn_mower
+  ├─ sensor / setting
   ├─ image bản đồ
   └─ button/action
             │
@@ -96,8 +97,10 @@ Các nút chỉ được tạo khi add-on xác nhận robot hỗ trợ capabilit
   dưới dạng `number` khi profile thiết bị có hỗ trợ.
 - Trạng thái boolean được đưa vào `binary_sensor`; sensor số/chữ, ảnh bản đồ và
   button trạm/vật tư tiếp tục được tạo đầy đủ từ DTO của add-on.
+- Thiết bị GOAT có profile tương thích được tạo thành thực thể `lawn_mower`
+  chuẩn với bắt đầu cắt, tạm dừng và về trạm theo capability thực tế.
 
-### Profile robot đã bổ sung
+### Hỗ trợ thiết bị nội địa
 
 - DEEBOT T10 OMNI được nhận diện tự động từ định danh sản phẩm bất biến của
   Ecovacs, gồm các biến thể OMNI, OMNIWHITE và CURIEOMNI đã xác nhận trong APK.
@@ -108,6 +111,14 @@ Các nút chỉ được tạo khi add-on xác nhận robot hỗ trợ capabilit
   thực sự quảng bá hỗ trợ.
 - T10 Turbo/Newton và model OMNI không cùng dòng không bị nhận nhầm thành T10
   OMNI.
+- Với class nội địa chưa có trực tiếp trong `deebot-client`, add-on chuẩn hóa
+  vùng `cn`/`ww` trong `UILogicId` và tìm profile quốc tế tương đương từ catalog
+  218 profile đã đóng gói.
+- DEEBOT và GOAT chưa có cặp khớp chính xác dùng profile nền cùng thế hệ một
+  cách bảo thủ để ưu tiên trạng thái realtime và các lệnh cơ bản.
+- WINBOT, AIRBOT và thiết bị legacy chưa có protocol tương ứng vẫn xuất hiện
+  dưới dạng sensor metadata; add-on không quảng bá lệnh hoặc bản đồ chưa được
+  xác minh, và một thiết bị kiểu này không còn làm lỗi đăng nhập cả tài khoản.
 
 ## Yêu cầu
 
@@ -120,11 +131,11 @@ Các nút chỉ được tạo khi add-on xác nhận robot hỗ trợ capabilit
 
 ## Cài add-on local
 
-1. Giải nén `ecovacs_cn_addon-repository-v1.0.12.zip`.
+1. Giải nén `ecovacs_cn_addon-repository-v1.1.0.zip`.
 2. Chép nguyên thư mục `ecovacs_cn_backend` vào `/addons/`.
 3. Mở Add-on Store và chọn **Reload/Check for updates**.
 4. Chọn **Ecovacs China Backend** và nhấn **Install/Rebuild**.
-5. Kiểm tra trang thông tin phải hiển thị phiên bản `1.0.12`.
+5. Kiểm tra trang thông tin phải hiển thị phiên bản `1.1.0`.
 6. Khởi động add-on và bật **Show in sidebar** nếu muốn.
 
 Không chép riêng `addon_app` hoặc `protocol_components`. Docker build cần toàn bộ
@@ -168,7 +179,7 @@ có master password hoặc backdoor cho người cài đặt.
 
 ## Cài custom integration
 
-1. Giải nén `ecovacs_cn_hass-v1.0.12.zip`.
+1. Giải nén `ecovacs_cn_hass-v1.1.0.zip`.
 2. Chép thư mục `custom_components/ecovacs_cn` vào thư mục config Home
    Assistant.
 3. Khởi động lại Home Assistant Core.
@@ -240,7 +251,7 @@ Docker image hoặc backup `/data`. Không mở trực tiếp cổng `4545` ra I
 
 ### Docker báo thiếu protocol file
 
-Phải dùng bản `1.0.12` và chép nguyên thư mục add-on. Trong thư mục phải có:
+Phải dùng bản `1.1.0` và chép nguyên thư mục add-on. Trong thư mục phải có:
 
 ```text
 ecovacs_cn_backend/
@@ -258,7 +269,7 @@ kiểm tra version rồi chọn **Rebuild**.
 
 ### `ModuleNotFoundError: addon_app`
 
-Kiểm tra đang dùng `1.0.12`. Bản này cài package trực tiếp vào Python
+Kiểm tra đang dùng `1.1.0`. Bản này cài package trực tiếp vào Python
 `site-packages`; Docker build sẽ tự import-test package và không còn phụ thuộc
 `PYTHONPATH` hoặc quyền đọc `/app`.
 
@@ -274,17 +285,17 @@ Kiểm tra đang dùng `1.0.12`. Bản này cài package trực tiếp vào Pyth
 - Kiểm tra add-on đang chạy và `/health` hoạt động.
 - Add-on local dùng `http://local-ecovacs-cn-backend:4545`; không dùng URL
   Ingress hoặc `localhost`.
-- Reload integration một lần để bản `1.0.12` tự rediscover và lưu hostname mới.
+- Reload integration một lần để bản `1.1.0` tự rediscover và lưu hostname mới.
 - Tạo token mới trong add-on và sao chép toàn bộ chuỗi bắt đầu bằng `ecv1_`.
 - Không nhập ID quản lý 16 ký tự hiển thị trong danh sách token.
 - Không sử dụng Ingress URL làm API URL cho custom integration.
 
 ## Gói phát hành
 
-- `ecovacs_cn_addon-repository-v1.0.12.zip`: add-on repository/local build.
-- `ecovacs_cn_hass-v1.0.12.zip`: custom integration mỏng.
-- `ecovacs_cn_hass-full-archive-v1.0.12.zip`: add-on và custom trong một gói.
-- `SHA256SUMS-v1.0.12.txt`: checksum kiểm tra file phát hành.
+- `ecovacs_cn_addon-repository-v1.1.0.zip`: add-on repository/local build.
+- `ecovacs_cn_hass-v1.1.0.zip`: custom integration mỏng.
+- `ecovacs_cn_hass-full-archive-v1.1.0.zip`: add-on và custom trong một gói.
+- `SHA256SUMS-v1.1.0.txt`: checksum kiểm tra file phát hành.
 
 Xem thêm hướng dẫn vận hành ngắn trong `DOCS.md` và lịch sử thay đổi trong
 `CHANGELOG.md`.
