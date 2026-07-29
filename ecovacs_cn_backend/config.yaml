@@ -1,0 +1,33 @@
+name: Ecovacs China Backend
+version: 1.0.12
+slug: ecovacs_cn_backend
+description: Secure Ecovacs China cloud, MQTT, map, sensor and command backend
+url: https://github.com/example/ecovacs-cn-backend
+arch:
+  - aarch64
+  - amd64
+startup: services
+boot: auto
+init: false
+ingress: true
+ingress_port: 4545
+panel_icon: mdi:robot-vacuum
+panel_title: Ecovacs Backend
+webui: http://[HOST]:[PORT:4545]
+watchdog: http://[HOST]:[PORT:4545]/health
+ports:
+  4545/tcp: null
+ports_description:
+  4545/tcp: API nội bộ; chỉ ánh xạ ra host khi thật sự cần
+options:
+  log_level: info
+  map_refresh_interval: 10
+  state_refresh_interval: 30
+schema:
+  log_level: list(debug|info|warning|error)
+  map_refresh_interval: int(5,60)
+  state_refresh_interval: int(15,300)
+apparmor: true
+host_network: false
+privileged: []
+image: "ghcr.io/trankhanhduy2929-beep/ecovacs_cn_backend-{arch}"
