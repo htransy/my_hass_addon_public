@@ -1,11 +1,11 @@
 # Ecovacs China Backend cho Home Assistant
 
-Ecovacs China Backend `1.1.0` là hệ thống điều khiển robot Ecovacs tài khoản
+Ecovacs China Backend `1.2.0` là hệ thống điều khiển robot Ecovacs tài khoản
 Trung Quốc theo kiến trúc tách rời:
 
 - **Add-on** xử lý đăng nhập Ecovacs, cloud REST, MQTT, trạng thái, bản đồ và
   lệnh điều khiển trên cổng nội bộ `4545`.
-- **Custom integration** chỉ đọc dữ liệu nội bộ từ add-on và tạo entity chuẩn
+- **Custom integration** nhận thay đổi qua WebSocket nội bộ và tạo entity chuẩn
   Home Assistant theo capability an toàn mà add-on quảng bá.
 
 Tài khoản Ecovacs không được nhập hoặc lưu trong config entry của custom
@@ -22,7 +22,7 @@ Ecovacs Backend add-on :4545
   ├─ nhận trạng thái robot
   ├─ dựng/cache bản đồ SVG
   └─ kiểm tra và thực thi lệnh
-            │ API token nội bộ
+            │ WebSocket push + API token nội bộ
             ▼
 Custom integration
   ├─ vacuum / lawn_mower
@@ -67,7 +67,23 @@ Tùy capability robot thực tế cung cấp, integration có thể tạo:
   đầu tiên chưa tải xong.
 - Cache bản đồ trong add-on để custom integration không xử lý dữ liệu cloud.
 - Theo dõi revision và tên bản đồ.
-- Chu kỳ cập nhật mặc định 10 giây, có thể tăng trên máy cấu hình yếu.
+- Khi robot di chuyển, event map từ MQTT dựng revision SVG mới tối đa khoảng
+  mỗi giây; custom chỉ tải một lần cho mỗi revision rồi dùng cache nội bộ.
+- Chu kỳ map 30 giây chỉ là fallback khi event bị bỏ lỡ, không phải độ trễ
+  realtime bình thường.
+
+### Realtime và tải Home Assistant
+
+- Add-on chỉ phát WebSocket khi trạng thái, control hoặc revision bản đồ thật sự
+  thay đổi; lúc robot nghỉ không gửi lại snapshot lặp.
+- SVG không đi qua WebSocket. Socket chỉ gửi metadata/revision nhỏ, còn ảnh được
+  tải từ API local khi revision đổi.
+- Mỗi entity so sánh phần DTO riêng trước khi ghi state, vì vậy map di chuyển
+  không ép toàn bộ sensor/control ghi lại mỗi giây.
+- Poll local 60 giây và refresh cloud 120 giây là đường dự phòng. Dữ liệu giống
+  hệt không tạo update mới trong Home Assistant.
+- Sau login mật khẩu/SMS, add-on chuyển thẳng authenticator đã xác thực sang
+  controller thay vì đăng nhập portal lần thứ hai.
 
 ### Nút điều khiển
 
@@ -131,11 +147,11 @@ Các nút chỉ được tạo khi add-on xác nhận robot hỗ trợ capabilit
 
 ## Cài add-on local
 
-1. Giải nén `ecovacs_cn_addon-repository-v1.1.0.zip`.
+1. Giải nén `ecovacs_cn_addon-repository-v1.2.0.zip`.
 2. Chép nguyên thư mục `ecovacs_cn_backend` vào `/addons/`.
 3. Mở Add-on Store và chọn **Reload/Check for updates**.
 4. Chọn **Ecovacs China Backend** và nhấn **Install/Rebuild**.
-5. Kiểm tra trang thông tin phải hiển thị phiên bản `1.1.0`.
+5. Kiểm tra trang thông tin phải hiển thị phiên bản `1.2.0`.
 6. Khởi động add-on và bật **Show in sidebar** nếu muốn.
 
 Không chép riêng `addon_app` hoặc `protocol_components`. Docker build cần toàn bộ
@@ -179,7 +195,7 @@ có master password hoặc backdoor cho người cài đặt.
 
 ## Cài custom integration
 
-1. Giải nén `ecovacs_cn_hass-v1.1.0.zip`.
+1. Giải nén `ecovacs_cn_hass-v1.2.0.zip`.
 2. Chép thư mục `custom_components/ecovacs_cn` vào thư mục config Home
    Assistant.
 3. Khởi động lại Home Assistant Core.
@@ -207,9 +223,10 @@ integration.
 Add-on mặc định ưu tiên tải nhẹ:
 
 - một tiến trình Python;
-- custom integration đọc API nội bộ mỗi 10 giây;
-- map refresh mỗi 10 giây;
-- full state refresh mỗi 30 giây;
+- một WebSocket nội bộ chỉ phát khi DTO thật sự thay đổi;
+- map event MQTT dựng SVG revision mới khoảng mỗi giây khi robot di chuyển;
+- custom poll local 60 giây chỉ để dự phòng kết nối;
+- map fallback 30 giây và full state fallback 120 giây;
 - bản đồ và trạng thái được cache, không tạo tiến trình phụ;
 - không dùng `host_network`, không privileged và không mở cổng host mặc định.
 
@@ -218,8 +235,8 @@ Options:
 | Option | Mặc định | Phạm vi | Công dụng |
 | --- | ---: | ---: | --- |
 | `log_level` | `info` | debug–error | Mức log của backend |
-| `map_refresh_interval` | `10` giây | 5–60 | Chu kỳ cập nhật bản đồ |
-| `state_refresh_interval` | `30` giây | 15–300 | Chu kỳ yêu cầu toàn bộ trạng thái |
+| `map_refresh_interval` | `30` giây | 5–60 | Fallback dựng lại map nếu event bị lỡ |
+| `state_refresh_interval` | `120` giây | 15–300 | Fallback yêu cầu toàn bộ trạng thái |
 
 Máy yếu nên dùng map `15–20` giây và state `60` giây. Không bật debug lâu dài vì
 log nhiều hơn và có thể tăng I/O.
@@ -251,7 +268,7 @@ Docker image hoặc backup `/data`. Không mở trực tiếp cổng `4545` ra I
 
 ### Docker báo thiếu protocol file
 
-Phải dùng bản `1.1.0` và chép nguyên thư mục add-on. Trong thư mục phải có:
+Phải dùng bản `1.2.0` và chép nguyên thư mục add-on. Trong thư mục phải có:
 
 ```text
 ecovacs_cn_backend/
@@ -269,7 +286,7 @@ kiểm tra version rồi chọn **Rebuild**.
 
 ### `ModuleNotFoundError: addon_app`
 
-Kiểm tra đang dùng `1.1.0`. Bản này cài package trực tiếp vào Python
+Kiểm tra đang dùng `1.2.0`. Bản này cài package trực tiếp vào Python
 `site-packages`; Docker build sẽ tự import-test package và không còn phụ thuộc
 `PYTHONPATH` hoặc quyền đọc `/app`.
 
@@ -285,17 +302,17 @@ Kiểm tra đang dùng `1.1.0`. Bản này cài package trực tiếp vào Pytho
 - Kiểm tra add-on đang chạy và `/health` hoạt động.
 - Add-on local dùng `http://local-ecovacs-cn-backend:4545`; không dùng URL
   Ingress hoặc `localhost`.
-- Reload integration một lần để bản `1.1.0` tự rediscover và lưu hostname mới.
+- Reload integration một lần để bản `1.2.0` tự rediscover và lưu hostname mới.
 - Tạo token mới trong add-on và sao chép toàn bộ chuỗi bắt đầu bằng `ecv1_`.
 - Không nhập ID quản lý 16 ký tự hiển thị trong danh sách token.
 - Không sử dụng Ingress URL làm API URL cho custom integration.
 
 ## Gói phát hành
 
-- `ecovacs_cn_addon-repository-v1.1.0.zip`: add-on repository/local build.
-- `ecovacs_cn_hass-v1.1.0.zip`: custom integration mỏng.
-- `ecovacs_cn_hass-full-archive-v1.1.0.zip`: add-on và custom trong một gói.
-- `SHA256SUMS-v1.1.0.txt`: checksum kiểm tra file phát hành.
+- `ecovacs_cn_addon-repository-v1.2.0.zip`: add-on repository/local build.
+- `ecovacs_cn_hass-v1.2.0.zip`: custom integration mỏng.
+- `ecovacs_cn_hass-full-archive-v1.2.0.zip`: add-on và custom trong một gói.
+- `SHA256SUMS-v1.2.0.txt`: checksum kiểm tra file phát hành.
 
 Xem thêm hướng dẫn vận hành ngắn trong `DOCS.md` và lịch sử thay đổi trong
 `CHANGELOG.md`.
