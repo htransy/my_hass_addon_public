@@ -1,15 +1,10 @@
 # Ecovacs China Backend cho Home Assistant
 
-Ecovacs China Backend `1.2.0` là hệ thống điều khiển robot Ecovacs tài khoản
-Trung Quốc theo kiến trúc tách rời:
+Ecovacs China Backend `1.2.2` là add-on điều khiển robot Ecovacs tài khoản Trung
+Quốc và đưa entity vào Home Assistant trực tiếp bằng MQTT Discovery. Không cần
+cài custom component hoặc nhập cloud credential vào Home Assistant Core.
 
-- **Add-on** xử lý đăng nhập Ecovacs, cloud REST, MQTT, trạng thái, bản đồ và
-  lệnh điều khiển trên cổng nội bộ `4545`.
-- **Custom integration** nhận thay đổi qua WebSocket nội bộ và tạo entity chuẩn
-  Home Assistant theo capability an toàn mà add-on quảng bá.
-
-Tài khoản Ecovacs không được nhập hoặc lưu trong config entry của custom
-integration. Đây không phải phần mềm chính thức của Ecovacs.
+Đây không phải phần mềm chính thức của Ecovacs.
 
 ## Kiến trúc
 
@@ -19,19 +14,17 @@ Ecovacs China cloud + MQTT
             ▼
 Ecovacs Backend add-on :4545
   ├─ đăng nhập và lưu credential mã hóa
-  ├─ nhận trạng thái robot
+  ├─ nhận trạng thái robot từ Ecovacs MQTT
   ├─ dựng/cache bản đồ SVG
-  └─ kiểm tra và thực thi lệnh
-            │ WebSocket push + API token nội bộ
+  ├─ kiểm tra và thực thi lệnh
+  └─ cache từng MQTT topic, chỉ publish khi giá trị đổi
+            │ MQTT Discovery + retained state
             ▼
-Custom integration
+Home Assistant MQTT integration
   ├─ vacuum / lawn_mower
   ├─ sensor / setting
   ├─ image bản đồ
   └─ button/action
-            │
-            ▼
-Home Assistant
 ```
 
 ## Tính năng
@@ -48,7 +41,7 @@ Home Assistant
 
 ### Sensor trạng thái
 
-Tùy capability robot thực tế cung cấp, integration có thể tạo:
+Tùy capability robot thực tế cung cấp, add-on có thể tạo qua MQTT Discovery:
 
 - trạng thái online/offline, pin và trạng thái làm việc;
 - mã lỗi và mô tả lỗi;
@@ -65,23 +58,25 @@ Tùy capability robot thực tế cung cấp, integration có thể tạo:
 - Hiển thị bản đồ robot dưới dạng ảnh SVG.
 - Entity bản đồ luôn được tạo khi robot quảng bá capability map, kể cả lúc SVG
   đầu tiên chưa tải xong.
-- Cache bản đồ trong add-on để custom integration không xử lý dữ liệu cloud.
+- Cache bản đồ trong add-on; Home Assistant chỉ nhận SVG đã dựng xong.
 - Theo dõi revision và tên bản đồ.
-- Khi robot di chuyển, event map từ MQTT dựng revision SVG mới tối đa khoảng
-  mỗi giây; custom chỉ tải một lần cho mỗi revision rồi dùng cache nội bộ.
+- Khi robot di chuyển, event map từ Ecovacs dựng revision SVG mới. MQTT bridge
+  chỉ phát bản mới nhất theo giới hạn `mqtt_map_min_interval`.
 - Chu kỳ map 30 giây chỉ là fallback khi event bị bỏ lỡ, không phải độ trễ
   realtime bình thường.
 
 ### Realtime và tải Home Assistant
 
-- Add-on chỉ phát WebSocket khi trạng thái, control hoặc revision bản đồ thật sự
-  thay đổi; lúc robot nghỉ không gửi lại snapshot lặp.
-- SVG không đi qua WebSocket. Socket chỉ gửi metadata/revision nhỏ, còn ảnh được
-  tải từ API local khi revision đổi.
-- Mỗi entity so sánh phần DTO riêng trước khi ghi state, vì vậy map di chuyển
-  không ép toàn bộ sensor/control ghi lại mỗi giây.
-- Poll local 60 giây và refresh cloud 120 giây là đường dự phòng. Dữ liệu giống
-  hệt không tạo update mới trong Home Assistant.
+- Mỗi sensor/control có topic riêng và cache payload riêng. Giá trị giống hệt
+  lần trước không được publish lại.
+- Discovery, state và availability được retain để Home Assistant phục hồi nhanh
+  sau khi Core hoặc broker khởi động lại.
+- Map dùng topic riêng nên robot di chuyển không ép toàn bộ sensor/control cập
+  nhật; kích thước và tần suất map đều có giới hạn.
+- Lỗi broker, DNS hoặc credential MQTT chỉ làm bridge reconnect theo backoff;
+  không được ném ngược vào web server, watchdog hoặc Home Assistant Core.
+- Command MQTT được xử lý tuần tự, giới hạn 4 KiB, bỏ qua retained command và
+  tiếp tục đi qua allow-list/type validation của backend.
 - Sau login mật khẩu/SMS, add-on chuyển thẳng authenticator đã xác thực sang
   controller thay vì đăng nhập portal lần thứ hai.
 
@@ -139,19 +134,21 @@ Các nút chỉ được tạo khi add-on xác nhận robot hỗ trợ capabilit
 ## Yêu cầu
 
 - Home Assistant OS hoặc Supervised có hỗ trợ local add-on/app.
+- Một MQTT broker có thể truy cập từ container add-on; có thể dùng broker bên
+  ngoài hoặc MQTT service do Supervisor cung cấp.
 - Kiến trúc `amd64` hoặc `aarch64`.
 - Robot đã được thêm vào Ecovacs Home vùng Trung Quốc.
 - Home Assistant có kết nối Internet tới Ecovacs China cloud.
 - Python của add-on là `3.14`; Home Assistant Core không cần cài thư viện cloud
-  Ecovacs cho custom integration.
+  Ecovacs hoặc custom component.
 
 ## Cài add-on local
 
-1. Giải nén `ecovacs_cn_addon-repository-v1.2.0.zip`.
+1. Giải nén `ecovacs_cn_addon-repository-v1.2.2.zip`.
 2. Chép nguyên thư mục `ecovacs_cn_backend` vào `/addons/`.
 3. Mở Add-on Store và chọn **Reload/Check for updates**.
 4. Chọn **Ecovacs China Backend** và nhấn **Install/Rebuild**.
-5. Kiểm tra trang thông tin phải hiển thị phiên bản `1.2.0`.
+5. Kiểm tra trang thông tin phải hiển thị phiên bản `1.2.2`.
 6. Khởi động add-on và bật **Show in sidebar** nếu muốn.
 
 Không chép riêng `addon_app` hoặc `protocol_components`. Docker build cần toàn bộ
@@ -162,7 +159,7 @@ thư mục `ecovacs_cn_backend`.
 1. Mở giao diện **Ecovacs Backend** từ thanh bên Home Assistant.
 2. Nhập mã khởi tạo một lần do người cài đặt cung cấp.
 3. Đặt PIN quản trị 4 số hoặc mật khẩu dài hơn.
-4. Lưu API token đầu tiên ở nơi an toàn.
+4. Kiểm tra ô **MQTT Home Assistant** chuyển sang **Đã kết nối**.
 
 Mã khởi tạo chỉ dùng cho installation chưa được thiết lập và bị vô hiệu sau khi
 đặt mật khẩu quản trị. Đây không phải mật khẩu khôi phục hoặc master password.
@@ -178,54 +175,29 @@ Mã khởi tạo chỉ dùng cho installation chưa được thiết lập và b
 Mật khẩu và mã SMS được xóa khỏi form sau khi gửi. Giao diện/API không có chức
 năng đọc lại credential Ecovacs đã lưu.
 
-## Tạo API token cho Home Assistant
+## Kết nối Home Assistant bằng MQTT
 
-1. Trong add-on, mở phần **API cho Home Assistant**.
-2. Nhập mật khẩu quản trị và đặt tên máy khách.
-3. Tạo token và sao chép ngay; token đầy đủ bắt đầu bằng `ecv1_` và chỉ hiển
-   thị một lần.
-4. Nên tạo token riêng cho từng máy Home Assistant.
+1. Mở giao diện **Ingress** của add-on.
+2. Trong thẻ **Kết nối MQTT**, điền địa chỉ, cổng, tài khoản và mật khẩu broker.
+3. Bật **Dùng TLS** nếu broker yêu cầu TLS, thường là cổng `8883`.
+4. Bấm **Lưu và kết nối MQTT**; bridge sẽ kết nối lại ngay.
+5. Nếu để trống địa chỉ, add-on thử MQTT service `mqtt:want` của Supervisor.
+6. Sau khi đăng nhập Ecovacs, device/entity tự xuất hiện qua MQTT Discovery.
 
-Giá trị 16 ký tự hiển thị trong danh sách token là **ID quản lý** chỉ dùng để
-thu hồi, không phải API token. Sau khi nâng cấp lên `1.0.10`, hãy tạo một token
-mới và nhập toàn bộ chuỗi bắt đầu bằng `ecv1_` vào custom integration.
-
-Đổi mật khẩu quản trị sẽ thu hồi toàn bộ token cũ và cấp token thay thế. Không
-có master password hoặc backdoor cho người cài đặt.
-
-## Cài custom integration
-
-1. Giải nén `ecovacs_cn_hass-v1.2.0.zip`.
-2. Chép thư mục `custom_components/ecovacs_cn` vào thư mục config Home
-   Assistant.
-3. Khởi động lại Home Assistant Core.
-4. Vào **Settings → Devices & services → Add integration**.
-5. Chọn **Ecovacs China Backend Client**.
-6. Custom sẽ tự tìm hostname qua Supervisor. Với add-on local, URL đúng là
-   `http://local-ecovacs-cn-backend:4545`; nhập API token vừa tạo và tắt kiểm
-   tra TLS vì kết nối nội bộ này dùng HTTP.
-
-Nếu URL đã lưu không còn hoạt động, custom tự hỏi lại Supervisor, thử hostname
-mới và cập nhật config entry. Khi Home Assistant khởi động trước add-on,
-integration chuyển sang trạng thái retry thay vì dừng setup vĩnh viễn.
-
-Config entry của custom chỉ chứa:
-
-- `addon_url`;
-- `api_token` của add-on;
-- `verify_ssl`.
-
-Không nhập Ecovacs ID, số điện thoại, mật khẩu hoặc cloud token vào custom
-integration.
+Không cần API token để Home Assistant nhận entity. Nếu trước đây đã cài
+`custom_components/ecovacs_cn`, hãy xóa integration cũ, xóa thư mục đó rồi
+restart Home Assistant để tránh entity trùng.
 
 ## Cấu hình hiệu năng
 
 Add-on mặc định ưu tiên tải nhẹ:
 
 - một tiến trình Python;
-- một WebSocket nội bộ chỉ phát khi DTO thật sự thay đổi;
-- map event MQTT dựng SVG revision mới khoảng mỗi giây khi robot di chuyển;
-- custom poll local 60 giây chỉ để dự phòng kết nối;
+- một MQTT bridge nền tách lỗi khỏi web server và cloud controller;
+- mỗi topic chỉ publish khi payload thực sự thay đổi;
+- availability kép cho trạng thái bridge và từng robot;
+- reconnect broker theo exponential backoff tối đa 300 giây;
+- map chỉ publish bản mới nhất theo interval và giới hạn byte;
 - map fallback 30 giây và full state fallback 120 giây;
 - bản đồ và trạng thái được cache, không tạo tiến trình phụ;
 - không dùng `host_network`, không privileged và không mở cổng host mặc định.
@@ -237,6 +209,10 @@ Options:
 | `log_level` | `info` | debug–error | Mức log của backend |
 | `map_refresh_interval` | `30` giây | 5–60 | Fallback dựng lại map nếu event bị lỡ |
 | `state_refresh_interval` | `120` giây | 15–300 | Fallback yêu cầu toàn bộ trạng thái |
+| `mqtt_enabled` | `true` | true/false | Bật MQTT Discovery bridge |
+| `mqtt_map_enabled` | `true` | true/false | Publish ảnh SVG qua MQTT Image |
+| `mqtt_map_min_interval` | `5` giây | 1–60 | Khoảng cách tối thiểu giữa hai map publish |
+| `mqtt_map_max_bytes` | `2000000` | 64000–10000000 | Bỏ qua map quá lớn để bảo vệ broker/Core |
 
 Máy yếu nên dùng map `15–20` giây và state `60` giây. Không bật debug lâu dài vì
 log nhiều hơn và có thể tăng I/O.
@@ -244,8 +220,9 @@ log nhiều hơn và có thể tăng I/O.
 ## Bảo mật và dữ liệu
 
 - Mật khẩu quản trị được băm bằng scrypt.
-- API token ngẫu nhiên, chỉ lưu HMAC hash và có thể thu hồi.
+- Phiên bearer quản trị ngẫu nhiên, chỉ lưu HMAC hash và có thể thu hồi.
 - Credential Ecovacs được mã hóa AES-256-GCM trong `/data/secrets.enc`.
+- MQTT broker credential nhập trong Ingress được mã hóa riêng trong `/data/mqtt`.
 - Khóa mã hóa chỉ nằm trong `/data` của installation.
 - Form quản trị dùng `sessionStorage`, không dùng `localStorage`.
 - API giới hạn body 64 KiB và rate-limit các lần xác thực thất bại.
@@ -268,7 +245,7 @@ Docker image hoặc backup `/data`. Không mở trực tiếp cổng `4545` ra I
 
 ### Docker báo thiếu protocol file
 
-Phải dùng bản `1.2.0` và chép nguyên thư mục add-on. Trong thư mục phải có:
+Phải dùng bản `1.2.2` và chép nguyên thư mục add-on. Trong thư mục phải có:
 
 ```text
 ecovacs_cn_backend/
@@ -286,7 +263,7 @@ kiểm tra version rồi chọn **Rebuild**.
 
 ### `ModuleNotFoundError: addon_app`
 
-Kiểm tra đang dùng `1.2.0`. Bản này cài package trực tiếp vào Python
+Kiểm tra đang dùng `1.2.2`. Bản này cài package trực tiếp vào Python
 `site-packages`; Docker build sẽ tự import-test package và không còn phụ thuộc
 `PYTHONPATH` hoặc quyền đọc `/app`.
 
@@ -297,22 +274,20 @@ Kiểm tra đang dùng `1.2.0`. Bản này cài package trực tiếp vào Pytho
 - Chọn **Kết nối lại** và xem log cloud/MQTT.
 - Không chia sẻ log debug trước khi tự kiểm tra dữ liệu nhạy cảm.
 
-### Custom integration không kết nối
+### MQTT không tạo entity
 
-- Kiểm tra add-on đang chạy và `/health` hoạt động.
-- Add-on local dùng `http://local-ecovacs-cn-backend:4545`; không dùng URL
-  Ingress hoặc `localhost`.
-- Reload integration một lần để bản `1.2.0` tự rediscover và lưu hostname mới.
-- Tạo token mới trong add-on và sao chép toàn bộ chuỗi bắt đầu bằng `ecv1_`.
-- Không nhập ID quản lý 16 ký tự hiển thị trong danh sách token.
-- Không sử dụng Ingress URL làm API URL cho custom integration.
+- Kiểm tra broker và MQTT integration của Home Assistant đang hoạt động.
+- Kiểm tra ô **MQTT Home Assistant** trong giao diện add-on.
+- Xem log có `MQTT service is unavailable` hoặc lỗi xác thực broker hay không.
+- Restart add-on sau khi broker được cài để Supervisor cấp service credential.
+- Không cấu hình retained command thủ công; add-on chủ động bỏ qua loại message
+  này để tránh lặp lại lệnh cũ sau reconnect.
 
 ## Gói phát hành
 
-- `ecovacs_cn_addon-repository-v1.2.0.zip`: add-on repository/local build.
-- `ecovacs_cn_hass-v1.2.0.zip`: custom integration mỏng.
-- `ecovacs_cn_hass-full-archive-v1.2.0.zip`: add-on và custom trong một gói.
-- `SHA256SUMS-v1.2.0.txt`: checksum kiểm tra file phát hành.
+- Mọi bản build mới được lưu trong thư mục `ket_qua` ở root workspace.
+- `ecovacs_cn_addon-repository-v1.2.2.zip`: add-on repository/local build.
+- `SHA256SUMS-v1.2.2.txt`: checksum của archive add-on.
 
 Xem thêm hướng dẫn vận hành ngắn trong `DOCS.md` và lịch sử thay đổi trong
 `CHANGELOG.md`.
