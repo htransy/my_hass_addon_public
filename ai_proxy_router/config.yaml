@@ -1,6 +1,6 @@
 name: "AI Proxy Router"
-description: "Xoay vòng API Key, Codex OAuth, định tuyến Text/Vision và Bolt Token Saver RTK/Headroom/Caveman/Ponytail."
-version: "1.9.0"
+description: "Xoay vòng API Key, Codex OAuth, Text/Vision, Bolt Token Saver và giao diện song ngữ Việt/Anh."
+version: "1.10.2"
 slug: "ai_proxy_router"
 init: false
 arch:
