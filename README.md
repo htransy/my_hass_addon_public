@@ -1,163 +1,102 @@
-# 🏠 Trần Khánh Duy - Home Assistant Add-on Repository
+<div align="center">
 
-Chào mừng bạn đến với kho **Home Assistant Add-on Repository**.
+# 🏠 Duy's Home Assistant Add-ons
 
-Đây là nơi tổng hợp các add-on dành cho **Home Assistant**, giúp mở rộng hệ thống với các tính năng AI, camera, media và tích hợp thực tế.
+**Practical Home Assistant add-ons for AI routing, computer vision, camera integrations, robot vacuums, voice control, and media automation.**
+
+[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Add--ons-41BDF5?logo=home-assistant&logoColor=white)](https://www.home-assistant.io/)
+[![Repository](https://img.shields.io/badge/Add--on-Repository-blue)](https://github.com/trankhanhduy2929-beep/Duy_Home_Assistant_Addons)
+[![GitHub last commit](https://img.shields.io/github/last-commit/trankhanhduy2929-beep/Duy_Home_Assistant_Addons)](https://github.com/trankhanhduy2929-beep/Duy_Home_Assistant_Addons/commits/main)
+[![License](https://img.shields.io/badge/Public%20repository-MIT-green)](LICENSE)
+[![Sponsor](https://img.shields.io/badge/Sponsor-GitHub-EA4AAA?logo=github-sponsors)](https://github.com/sponsors/trankhanhduy2929-beep)
+
+**English** · [Tiếng Việt](README_VI.md)
+
+</div>
 
 ---
 
-## 🚀 Cách thêm repository vào Home Assistant
+## About this repository
 
-1. Mở **Home Assistant**
-2. Vào **Settings** → **Add-ons** → **Add-on Store**
-3. Nhấn dấu **⋮** ở góc phải trên cùng
-4. Chọn **Repositories**
-5. Dán URL repository:
+This is the public installation and documentation repository for add-ons maintained by **Trần Khánh Duy**.
+
+It contains Home Assistant add-on manifests, icons, documentation, release information, and links to prebuilt container images. Some add-ons are distributed as prebuilt images while their implementation source code is maintained privately.
+
+> [!IMPORTANT]
+> The MIT License in this repository applies only to files committed to this public repository. It does not automatically apply to private source code or separately distributed container images. See [NOTICE.md](NOTICE.md).
+
+## Installation
+
+1. Open **Home Assistant**.
+2. Go to **Settings → Add-ons → Add-on Store**.
+3. Open the **⋮** menu in the top-right corner.
+4. Select **Repositories**.
+5. Add this repository:
 
 ```text
-https://github.com/trankhanhduy2929-beep/my_hass_addon_public
+https://github.com/trankhanhduy2929-beep/Duy_Home_Assistant_Addons
 ```
 
-6. Nhấn **Add**
-7. Quay lại **Add-on Store** để cài add-on mong muốn
+6. Return to the Add-on Store and install the add-on you need.
 
----
-
-## 📦 Các add-on hiện có
+## Featured add-on
 
 ### 🤖 AI Proxy Router
 
-**Slug:** `ai_proxy_router`  
-**Version:** `1.0.6`
+A centralized OpenAI-compatible AI gateway for Home Assistant with:
 
-Add-on hỗ trợ định tuyến AI thông minh cho nhiều tác vụ khác nhau trong hệ thống.
+- Multiple AI providers and API keys
+- Intelligent text and vision routing
+- Automatic failover and provider recovery
+- Proxy Key isolation and usage limits
+- OpenAI Codex OAuth
+- Provider health monitoring and Telegram alerts
+- Bolt Token Saver: RTK, Headroom, Caveman, and Ponytail
 
-### Tính năng nổi bật
+**Current public manifest version:** `1.9.0`  
+**Supported architectures:** `amd64`, `aarch64`
 
-- Quản lý request AI tập trung
-- Hỗ trợ nhiều provider/model tùy cấu hình
-- Tự động fallback khi model/provider gặp lỗi
-- Hỗ trợ các tác vụ AI text và vision
-- Theo dõi trạng thái route thuận tiện
-- Có giao diện mở trực tiếp trong Home Assistant
+[Read the complete AI Proxy Router documentation](ai_proxy_router/README.md)
 
----
+## Other add-ons
 
-### 📷 Hanet Camera Bridge
+This repository also includes add-ons for:
 
-**Slug:** `hanet_bridge`  
-**Version:** `2.5.2`
+- HANET camera, FaceID, access control, LPR, and attendance integration
+- Ecovacs cloud, MQTT, maps, sensors, and robot control
+- AI camera/image description
+- Voice actions and Vietnamese voice workflows
+- YouTube and media automation
+- Experimental Home Assistant utilities
 
-Add-on kết nối Hanet AI Camera với Home Assistant.
+Open an add-on folder to view its manifest and documentation.
 
-### Tính năng nổi bật
+## Updates
 
-- Kết nối dữ liệu từ Hanet AI Camera
-- Hỗ trợ bridge dữ liệu qua MQTT/Webhook
-- Dễ dùng cho automation và giám sát
-- Có giao diện mở trực tiếp trong Home Assistant
-- Phù hợp cho nhu cầu tích hợp cơ bản, gọn nhẹ
+When a new add-on version is published:
 
----
+1. Open **Settings → Add-ons → Add-on Store**.
+2. Open the installed add-on.
+3. Review the changelog and backup your configuration.
+4. Select **Update**.
+5. Test the add-on after the upgrade.
 
-### 📷 Hanet Camera Bridge Pro
+## Support
 
-**Slug:** `hanet_bridge_pro`  
-**Version:** `3.0.1`
+For installation questions, bug reports, and feature requests, use [GitHub Issues](https://github.com/trankhanhduy2929-beep/Duy_Home_Assistant_Addons/issues).
 
-Phiên bản nâng cao của Hanet Bridge, phục vụ nhu cầu tích hợp chuyên sâu hơn.
+Before posting logs:
 
-### Tính năng nổi bật
+- Remove API keys, Proxy Keys, passwords, cookies, tokens, IP addresses, and personal prompts.
+- Include the add-on version, Home Assistant version, architecture, provider, and exact error.
+- Use the security reporting process for vulnerabilities. See [SECURITY.md](SECURITY.md).
 
-- Kết nối Hanet AI Camera với Home Assistant
-- Đồng bộ dữ liệu ổn định hơn cho các kịch bản thực tế
-- Hỗ trợ xử lý nhận diện nâng cao
-- Phù hợp cho nhu cầu mở rộng và triển khai chuyên nghiệp
-- Có giao diện mở trực tiếp trong Home Assistant
+## Support development
 
----
+These add-ons are maintained in personal development time. Sponsorship helps fund compatibility testing, documentation, security maintenance, and future improvements.
 
-### 🧠 AI Vision Entity Describer
+[❤️ Sponsor on GitHub](https://github.com/sponsors/trankhanhduy2929-beep)
 
-**Slug:** `ai_vision_entity_describer`  
-**Version:** `1.1.1`
+## License and distribution
 
-Add-on dùng AI để mô tả nội dung ảnh từ camera hoặc entity trong Home Assistant.
-
-### Tính năng nổi bật
-
-- Phân tích ảnh từ camera/entity
-- Tạo mô tả bằng AI cho hình ảnh nhận được
-- Phù hợp cho camera giám sát, cảnh báo thông minh, tóm tắt sự kiện
-- Lưu lịch sử mô tả để tiện theo dõi
-- Có giao diện trực tiếp trong Home Assistant
-
----
-
-### 🎵 YouTube Music Cinematic
-
-**Slug:** `youtube_cast_addon`  
-**Version:** `1.20.17`
-
-Add-on phát nhạc YouTube với giao diện trực quan, phù hợp cho trải nghiệm media trong Home Assistant.
-
-### Tính năng nổi bật
-
-- Tìm kiếm và phát nhạc YouTube
-- Cast nhạc tới thiết bị/media player trong Home Assistant
-- Giao diện cinematic đẹp, dễ dùng
-- Hỗ trợ danh sách phát, hàng chờ và các tiện ích nghe nhạc tùy phiên bản
-- Mở trực tiếp trong Home Assistant
-
----
-
-## 🧩 Cấu trúc repository
-
-```text
-.
-├── README.md
-├── repository.yaml
-├── ai_proxy_router/
-├── hanet_bridge/
-├── hanet_bridge_pro/
-├── hass-ai-vision-addon/
-└── youtube_cast_addon/
-```
-
----
-
-## ✅ Phù hợp với ai?
-
-Repository này phù hợp nếu bạn muốn:
-
-- Mở rộng Home Assistant với các add-on AI
-- Tích hợp camera Hanet vào hệ thống nhà thông minh
-- Tạo mô tả hình ảnh bằng AI từ camera/entity
-- Phát nhạc YouTube trong Home Assistant với giao diện đẹp
-- Cài add-on tiện lợi thông qua Add-on Store
-
----
-
-## 🔄 Cập nhật add-on
-
-Khi có phiên bản mới:
-
-1. Mở **Add-on Store** trong Home Assistant
-2. Tìm add-on đang dùng
-3. Nếu có bản mới, Home Assistant sẽ hiển thị cập nhật
-4. Nhấn **Update** để nâng cấp
-
----
-
-## 🌐 Mua box, Pc Home Assistant tại
-
-👉 **https://banhang.trankhanhduy.click/**
-
----
-
-## 📬 Hỗ trợ
-
-Nếu cần hỗ trợ cài đặt hoặc sử dụng add-on, bạn có thể tạo issue trên GitHub hoặc liên hệ qua kênh phù hợp.
-Zalo: 084 608 7165
-
-Cảm ơn bạn đã sử dụng repository này ❤️
+Public repository files are licensed under the [MIT License](LICENSE). Private source code and prebuilt container images may have separate terms. See [NOTICE.md](NOTICE.md).
