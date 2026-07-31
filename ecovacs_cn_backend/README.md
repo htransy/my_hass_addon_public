@@ -1,6 +1,6 @@
 # Ecovacs China Backend cho Home Assistant
 
-Ecovacs China Backend `1.2.2` là add-on điều khiển robot Ecovacs tài khoản Trung
+Ecovacs China Backend `1.2.3` là add-on điều khiển robot Ecovacs tài khoản Trung
 Quốc và đưa entity vào Home Assistant trực tiếp bằng MQTT Discovery. Không cần
 cài custom component hoặc nhập cloud credential vào Home Assistant Core.
 
@@ -113,6 +113,14 @@ Các nút chỉ được tạo khi add-on xác nhận robot hỗ trợ capabilit
 
 ### Hỗ trợ thiết bị nội địa
 
+- DEEBOT X9 PRO OMNI hỗ trợ trực tiếp class quốc tế `ilt3k8` và hai class nội
+  địa `lwmdoj`, `0jv4ti`; class X9 mới có model/tên sản phẩm khớp sẽ dùng profile
+  `ilt3k8` đã xác minh.
+- X9 PRO có bản đồ/phòng/vị trí, dọn khu vực, bốn mức lực hút, ba work mode, mức
+  nước tùy chỉnh `0–50`, tần suất tự giặt giẻ `0–60`, auto-empty, khóa trẻ em,
+  firmware, chế độ hiệu suất và các cảm biến tuổi thọ vật tư.
+- Nút trạm X9 hiện chỉ gồm hút rác theo capability upstream. Add-on không tự
+  quảng bá giặt giẻ, sấy giẻ hoặc vệ sinh đế khi lệnh chưa được xác minh.
 - DEEBOT T10 OMNI được nhận diện tự động từ định danh sản phẩm bất biến của
   Ecovacs, gồm các biến thể OMNI, OMNIWHITE và CURIEOMNI đã xác nhận trong APK.
 - Class `hxm494` của T10 OMNI nội địa được nhận diện trực tiếp ngay cả khi tên
@@ -144,11 +152,11 @@ Các nút chỉ được tạo khi add-on xác nhận robot hỗ trợ capabilit
 
 ## Cài add-on local
 
-1. Giải nén `ecovacs_cn_addon-repository-v1.2.2.zip`.
+1. Giải nén `ecovacs_cn_addon-repository-v1.2.3.zip`.
 2. Chép nguyên thư mục `ecovacs_cn_backend` vào `/addons/`.
 3. Mở Add-on Store và chọn **Reload/Check for updates**.
 4. Chọn **Ecovacs China Backend** và nhấn **Install/Rebuild**.
-5. Kiểm tra trang thông tin phải hiển thị phiên bản `1.2.2`.
+5. Kiểm tra trang thông tin phải hiển thị phiên bản `1.2.3`.
 6. Khởi động add-on và bật **Show in sidebar** nếu muốn.
 
 Không chép riêng `addon_app` hoặc `protocol_components`. Docker build cần toàn bộ
@@ -245,7 +253,7 @@ Docker image hoặc backup `/data`. Không mở trực tiếp cổng `4545` ra I
 
 ### Docker báo thiếu protocol file
 
-Phải dùng bản `1.2.2` và chép nguyên thư mục add-on. Trong thư mục phải có:
+Phải dùng bản `1.2.3` và chép nguyên thư mục add-on. Trong thư mục phải có:
 
 ```text
 ecovacs_cn_backend/
@@ -263,7 +271,7 @@ kiểm tra version rồi chọn **Rebuild**.
 
 ### `ModuleNotFoundError: addon_app`
 
-Kiểm tra đang dùng `1.2.2`. Bản này cài package trực tiếp vào Python
+Kiểm tra đang dùng `1.2.3`. Bản này cài package trực tiếp vào Python
 `site-packages`; Docker build sẽ tự import-test package và không còn phụ thuộc
 `PYTHONPATH` hoặc quyền đọc `/app`.
 
@@ -286,8 +294,8 @@ Kiểm tra đang dùng `1.2.2`. Bản này cài package trực tiếp vào Pytho
 ## Gói phát hành
 
 - Mọi bản build mới được lưu trong thư mục `ket_qua` ở root workspace.
-- `ecovacs_cn_addon-repository-v1.2.2.zip`: add-on repository/local build.
-- `SHA256SUMS-v1.2.2.txt`: checksum của archive add-on.
+- `ecovacs_cn_addon-repository-v1.2.3.zip`: add-on repository/local build.
+- `SHA256SUMS-v1.2.3.txt`: checksum của archive add-on.
 
 Xem thêm hướng dẫn vận hành ngắn trong `DOCS.md` và lịch sử thay đổi trong
 `CHANGELOG.md`.
