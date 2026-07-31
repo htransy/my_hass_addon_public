@@ -34,15 +34,14 @@ AI Proxy Router combines multiple AI providers behind one OpenAI-compatible API,
 
 Kiến trúc được khai báo trong add-on: `amd64` và `aarch64`.
 
-### 3. Đăng nhập và chọn ngôn ngữ
+### 3. Mở dashboard và chọn ngôn ngữ
 
-- Bộ chọn **Tiếng Việt / English** nằm ngoài khung đăng nhập, dùng được trước khi nhập tài khoản.
+- Add-on mở thẳng dashboard, không còn màn hình đăng nhập, tài khoản hay mật khẩu nội bộ.
+- Bộ chọn **Tiếng Việt / English** nằm trên thanh điều hướng và dùng được ngay khi mở addon.
 - Nếu chưa từng chọn, trình duyệt tiếng Việt dùng Tiếng Việt; các ngôn ngữ khác dùng English.
 - Lựa chọn được lưu trong trình duyệt và có thể đổi lại trên thanh điều hướng dashboard.
-- Tài khoản mặc định: `admin`
-- Mật khẩu mặc định: `1234`
 
-> **Quan trọng:** đổi ngay tài khoản và mật khẩu mặc định tại phần cài đặt tài khoản sau lần đăng nhập đầu tiên.
+> **Lưu ý:** dashboard không có lớp tài khoản/mật khẩu riêng. Hãy chỉ mở addon qua Home Assistant Ingress hoặc mạng nội bộ tin cậy.
 
 ### 4. Thêm nguồn AI/API key
 
@@ -223,9 +222,8 @@ Headroom phải chạy như dịch vụ riêng có endpoint `/v1/compress`. Nh�
 
 ### 14. Lưu ý bảo mật
 
-- Đổi ngay tài khoản `admin` và mật khẩu `1234`.
+- Dashboard không có lớp tài khoản/mật khẩu nội bộ; hãy dựa vào Home Assistant Ingress, firewall và kiểm soát truy cập mạng.
 - Không mở trực tiếp port `1236` ra Internet nếu chưa có HTTPS, firewall và lớp xác thực phù hợp.
-- Chỉ tắt xác thực dashboard khi dùng Home Assistant Ingress hoặc mạng nội bộ thực sự tin cậy.
 - Không chia sẻ API key nguồn; cấp Proxy Key riêng cho từng ứng dụng và đặt hạn mức/rate limit.
 - Tạo lại Proxy Key ngay nếu nghi ngờ bị lộ.
 - Kiểm tra kỹ file backup trước khi sao chép hoặc gửi cho người khác.
@@ -257,15 +255,14 @@ Headroom phải chạy như dịch vụ riêng có endpoint `/v1/compress`. Nh�
 
 The add-on currently declares `amd64` and `aarch64` architectures.
 
-### 3. Sign in and select a language
+### 3. Open the dashboard and select a language
 
-- The **Tiếng Việt / English** selector is outside the login card, so it works before authentication.
+- The add-on opens the dashboard directly; there is no built-in login screen, username, or password.
+- The **Tiếng Việt / English** selector is on the navigation bar and works immediately when the add-on opens.
 - On first use, Vietnamese browsers default to Vietnamese; other browser languages default to English.
 - The selection is stored in the browser and can be changed again from the dashboard navigation bar.
-- Default username: `admin`
-- Default password: `1234`
 
-> **Important:** change the default username and password in Account Settings immediately after the first login.
+> **Note:** the dashboard has no separate username/password layer. Only expose it through Home Assistant Ingress or a trusted local network.
 
 ### 4. Add an AI provider/API key
 
@@ -446,9 +443,8 @@ Headroom must run as a separate service exposing `/v1/compress`. Enter its servi
 
 ### 14. Security notes
 
-- Immediately replace the default `admin` / `1234` credentials.
-- Do not expose port `1236` directly to the Internet without HTTPS, firewall rules, and appropriate authentication controls.
-- Disable dashboard authentication only when using trusted Home Assistant Ingress or a genuinely trusted local network.
+- The dashboard has no internal username/password layer; rely on Home Assistant Ingress, firewall rules, and network access control.
+- Do not expose port `1236` directly to the Internet without HTTPS, firewall rules, and appropriate external authentication controls.
 - Never share upstream API keys; issue a separate Proxy Key per application and apply budgets/rate limits.
 - Regenerate a Proxy Key immediately if it may have leaked.
 - Treat full backup files as secrets before copying or sharing them.
@@ -457,6 +453,6 @@ Headroom must run as a separate service exposing `/v1/compress`. Enter its servi
 
 ## Phiên bản / Version
 
-Tài liệu này áp dụng cho AI Proxy Router `1.10.2`.
+Tài liệu này áp dụng cho AI Proxy Router `1.11.0`.
 
-This guide applies to AI Proxy Router `1.10.2`.
+This guide applies to AI Proxy Router `1.11.0`.
