@@ -1,6 +1,6 @@
 name: "AI Proxy Router"
-description: "Xoay vòng API Key, Codex OAuth, Text/Vision, Bolt Token Saver, giao diện song ngữ và mở thẳng dashboard không cần tài khoản."
-version: "1.11.0"
+description: "Xoay API Key, Text/Vision, SSE, Responses API, Function Tools, JSON Schema và Bolt Token Saver."
+version: "1.14.0"
 slug: "ai_proxy_router"
 init: false
 arch:
@@ -8,10 +8,17 @@ arch:
   - amd64
 panel_icon: mdi:robot-outline
 panel_title: "AI Proxy"
+panel_admin: true
 ingress: true
 ingress_port: 1236
 ports:
-  1236/tcp: 1236
+  1236/tcp: null
+ports_description:
+  1236/tcp: "OpenAI-compatible API /v1 (bật thủ công nếu client LAN cần truy cập)"
+watchdog: "http://[HOST]:[PORT:1236]/health"
+startup: services
+boot: auto
+stage: stable
 map:
   - config:rw
 options: {}
