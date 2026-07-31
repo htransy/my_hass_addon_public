@@ -34,7 +34,7 @@ It contains Home Assistant add-on manifests, icons, documentation, release infor
 5. Add this repository:
 
 ```text
-https://github.com/trankhanhduy2929-beep/Duy_Home_Assistant_Addons
+https://github.com/trankhanhduy2929-beep/my_hass_addon_public
 ```
 
 6. Return to the Add-on Store and install the add-on you need.
