@@ -13,6 +13,9 @@ Không cần cài custom component.
 - MQTT LWT, retained discovery/state và reconnect exponential nền;
 - kết nối broker ngay khi add-on chạy, không chờ Ecovacs cloud;
 - QoS 0 retained và tối đa 4 publish đồng thời để giảm độ trễ có kiểm soát;
+- sensor/binary_sensor lồng nhau, button thao tác, room select và room button;
+- nút Giặt giẻ/Sấy giẻ/Vệ sinh trạm cho profile X1 đã xác nhận;
+- kéo chọn vùng trực tiếp trên bản đồ ingress để gửi lệnh `customArea`;
 - queue có giới hạn, event burst coalesce và command concurrency có giới hạn;
 - Web UI nhập broker/port/username/password/TLS/prefix;
 - dashboard ingress, API chẩn đoán và quick command vẫn chạy trên port `7890`.
