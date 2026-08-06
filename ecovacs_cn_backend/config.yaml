@@ -1,5 +1,5 @@
 name: Ecovacs China Backend
-version: 1.2.11
+version: 1.2.12
 slug: ecovacs_cn_backend
 description: Secure Ecovacs China cloud, MQTT, map, sensor and command backend
 url: https://github.com/example/ecovacs-cn-backend
