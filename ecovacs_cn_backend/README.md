@@ -1,6 +1,6 @@
 # Ecovacs China Backend cho Home Assistant
 
-Ecovacs China Backend `1.2.9` là add-on điều khiển robot Ecovacs tài khoản Trung
+Ecovacs China Backend `1.2.11` là add-on điều khiển robot Ecovacs tài khoản Trung
 Quốc và đưa entity vào Home Assistant trực tiếp bằng MQTT Discovery. Không cần
 cài custom component hoặc nhập cloud credential vào Home Assistant Core.
 
@@ -49,6 +49,7 @@ Tùy capability robot thực tế cung cấp, add-on có thể tạo qua MQTT Di
 - cường độ Wi-Fi và địa chỉ IP;
 - lực hút, mức nước, tình trạng gắn giẻ và chế độ lau;
 - trạng thái trạm sạc/trạm Omni;
+- khu vực/phòng robot đang dọn, kèm ID phòng và danh sách phòng đã chọn;
 - phiên bản, trạng thái và tự động cập nhật firmware;
 - phần trăm và thời gian còn lại của chổi, lọc, chổi cạnh và vật tư khác;
 - trạng thái không làm phiền trên profile T9 POWER tương thích.
@@ -60,18 +61,21 @@ Tùy capability robot thực tế cung cấp, add-on có thể tạo qua MQTT Di
   đầu tiên chưa tải xong.
 - Cache bản đồ trong add-on; Home Assistant chỉ nhận SVG đã dựng xong.
 - Theo dõi revision và tên bản đồ.
-- Giao diện Ingress hiển thị các phòng/khu vực trên bản đồ. Chạm vào đa giác
-  phòng hoặc nút tên phòng để gửi lệnh `spotArea`, robot chỉ dọn khu vực đó.
-- Có thể nhập tên dễ nhớ cho từng room ID ngay bên dưới nút dọn. Tên được lưu
-  mã hóa theo robot/map và tiếp tục dùng sau khi add-on khởi động lại.
+- Ingress không còn tải bản đồ chọn phòng vì nhiều firmware X1/T10 chỉ trả ID,
+  không trả ranh giới hoặc tâm phòng đủ tin cậy.
 - Mỗi khu vực được đưa lên Home Assistant thành MQTT button **Dọn [tên khu
-  vực]**; đổi tên chỉ cập nhật nhãn, không tạo entity mới.
+  vực]**; nút dùng room ID ổn định và tên phòng mà firmware/app cung cấp.
 - X1/T10 không bị gọi lại `getMapSubSet`: add-on lấy ID phòng và đa giác nhúng
   sẵn từ `getMapSet`; firmware chỉ trả ID vẫn có nút **Khu vực N** để dọn riêng.
+- Với X1/T10 dùng bản đồ mới, add-on đọc thêm `getMapSet_V2` giống app China để
+  lấy tên phòng và dữ liệu khu vực mà không gọi lệnh subset dễ timeout.
+- Sensor **Khu vực đang dọn** ghép `CleanInfo_V2.content.value` với `areaSts`;
+  giá trị trạng thái `1` xác định đúng phòng robot đang xử lý. Firmware không
+  có `areaSts` sẽ fallback về danh sách phòng đã chọn.
 - Khi robot di chuyển, event map từ Ecovacs dựng revision SVG mới. MQTT bridge
   chỉ phát bản mới nhất theo giới hạn `mqtt_map_min_interval`.
-- Chu kỳ map 30 giây chỉ là fallback khi event bị bỏ lỡ, không phải độ trễ
-  realtime bình thường.
+- Fallback 10 giây chỉ yêu cầu vị trí và đường đi động, không tải lại các mảnh
+  nền tĩnh; MQTT map mặc định có thể phát bản mới sau tối thiểu 2 giây.
 
 ### Realtime và tải Home Assistant
 
@@ -168,11 +172,11 @@ Các nút chỉ được tạo khi add-on xác nhận robot hỗ trợ capabilit
 
 ## Cài add-on local
 
-1. Giải nén `ecovacs_cn_addon-repository-v1.2.9.zip`.
+1. Giải nén `ecovacs_cn_addon-repository-v1.2.11.zip`.
 2. Chép nguyên thư mục `ecovacs_cn_backend` vào `/addons/`.
 3. Mở Add-on Store và chọn **Reload/Check for updates**.
 4. Chọn **Ecovacs China Backend** và nhấn **Install/Rebuild**.
-5. Kiểm tra trang thông tin phải hiển thị phiên bản `1.2.9`.
+5. Kiểm tra trang thông tin phải hiển thị phiên bản `1.2.11`.
 6. Khởi động add-on và bật **Show in sidebar** nếu muốn.
 
 Không chép riêng `addon_app` hoặc `protocol_components`. Docker build cần toàn bộ
@@ -207,8 +211,8 @@ năng đọc lại credential Ecovacs đã lưu.
 4. Bấm **Lưu và kết nối MQTT**; bridge sẽ kết nối lại ngay.
 5. Nếu để trống địa chỉ, add-on thử MQTT service `mqtt:want` của Supervisor.
 6. Sau khi đăng nhập Ecovacs, device/entity tự xuất hiện qua MQTT Discovery.
-7. Sau khi bản đồ trả room ID, mỗi khu vực xuất hiện thêm một MQTT button; đặt
-   tên trong Ingress để button có tên phòng dễ nhận biết.
+7. Sau khi bản đồ trả room ID, mỗi khu vực xuất hiện thêm một MQTT button; tên
+   phòng lấy từ Ecovacs Home, nếu thiếu sẽ dùng nhãn **Khu vực N**.
 
 Không cần API token để Home Assistant nhận entity. Nếu trước đây đã cài
 `custom_components/ecovacs_cn`, hãy xóa integration cũ, xóa thư mục đó rồi
@@ -224,7 +228,7 @@ Add-on mặc định ưu tiên tải nhẹ:
 - availability kép cho trạng thái bridge và từng robot;
 - reconnect broker theo exponential backoff tối đa 300 giây;
 - map chỉ publish bản mới nhất theo interval và giới hạn byte;
-- map fallback 30 giây và full state fallback 120 giây;
+- map động fallback 10 giây và full state fallback 120 giây;
 - bản đồ và trạng thái được cache, không tạo tiến trình phụ;
 - không dùng `host_network`, không privileged và không mở cổng host mặc định.
 
@@ -233,11 +237,11 @@ Options:
 | Option | Mặc định | Phạm vi | Công dụng |
 | --- | ---: | ---: | --- |
 | `log_level` | `info` | debug–error | Mức log của backend |
-| `map_refresh_interval` | `30` giây | 5–60 | Fallback dựng lại map nếu event bị lỡ |
+| `map_refresh_interval` | `10` giây | 5–60 | Fallback hỏi vị trí và đường đi nếu event bị lỡ |
 | `state_refresh_interval` | `120` giây | 15–300 | Fallback yêu cầu toàn bộ trạng thái |
 | `mqtt_enabled` | `true` | true/false | Bật MQTT Discovery bridge |
 | `mqtt_map_enabled` | `true` | true/false | Publish ảnh SVG qua MQTT Image |
-| `mqtt_map_min_interval` | `5` giây | 1–60 | Khoảng cách tối thiểu giữa hai map publish |
+| `mqtt_map_min_interval` | `2` giây | 1–60 | Khoảng cách tối thiểu giữa hai map publish |
 | `mqtt_map_max_bytes` | `2000000` | 64000–10000000 | Bỏ qua map quá lớn để bảo vệ broker/Core |
 
 Máy yếu nên dùng map `15–20` giây và state `60` giây. Không bật debug lâu dài vì
@@ -271,7 +275,7 @@ Docker image hoặc backup `/data`. Không mở trực tiếp cổng `4545` ra I
 
 ### Docker báo thiếu protocol file
 
-Phải dùng bản `1.2.9` và chép nguyên thư mục add-on. Trong thư mục phải có:
+Phải dùng bản `1.2.11` và chép nguyên thư mục add-on. Trong thư mục phải có:
 
 ```text
 ecovacs_cn_backend/
@@ -289,7 +293,7 @@ kiểm tra version rồi chọn **Rebuild**.
 
 ### `ModuleNotFoundError: addon_app`
 
-Kiểm tra đang dùng `1.2.9`. Bản này cài package trực tiếp vào Python
+Kiểm tra đang dùng `1.2.11`. Bản này cài package trực tiếp vào Python
 `site-packages`; Docker build sẽ tự import-test package và không còn phụ thuộc
 `PYTHONPATH` hoặc quyền đọc `/app`.
 
@@ -312,8 +316,8 @@ Kiểm tra đang dùng `1.2.9`. Bản này cài package trực tiếp vào Pytho
 ## Gói phát hành
 
 - Mọi bản build mới được lưu trong thư mục `ket_qua` ở root workspace.
-- `ecovacs_cn_addon-repository-v1.2.9.zip`: add-on repository/local build.
-- `SHA256SUMS-v1.2.9.txt`: checksum của archive add-on.
+- `ecovacs_cn_addon-repository-v1.2.11.zip`: add-on repository/local build.
+- `SHA256SUMS-v1.2.11.txt`: checksum của archive add-on.
 
 Xem thêm hướng dẫn vận hành ngắn trong `DOCS.md` và lịch sử thay đổi trong
 `CHANGELOG.md`.

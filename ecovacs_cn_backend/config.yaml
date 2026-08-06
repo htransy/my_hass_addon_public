@@ -1,5 +1,5 @@
 name: Ecovacs China Backend
-version: 1.2.9
+version: 1.2.11
 slug: ecovacs_cn_backend
 description: Secure Ecovacs China cloud, MQTT, map, sensor and command backend
 url: https://github.com/example/ecovacs-cn-backend
@@ -23,11 +23,11 @@ ports_description:
   4545/tcp: API nội bộ; chỉ ánh xạ ra host khi thật sự cần
 options:
   log_level: info
-  map_refresh_interval: 30
+  map_refresh_interval: 10
   state_refresh_interval: 120
   mqtt_enabled: true
   mqtt_map_enabled: true
-  mqtt_map_min_interval: 5
+  mqtt_map_min_interval: 2
   mqtt_map_max_bytes: 2000000
 schema:
   log_level: list(debug|info|warning|error)
