@@ -1,6 +1,6 @@
 # Ecovacs China Backend cho Home Assistant
 
-Ecovacs China Backend `1.2.7` là add-on điều khiển robot Ecovacs tài khoản Trung
+Ecovacs China Backend `1.2.9` là add-on điều khiển robot Ecovacs tài khoản Trung
 Quốc và đưa entity vào Home Assistant trực tiếp bằng MQTT Discovery. Không cần
 cài custom component hoặc nhập cloud credential vào Home Assistant Core.
 
@@ -60,6 +60,14 @@ Tùy capability robot thực tế cung cấp, add-on có thể tạo qua MQTT Di
   đầu tiên chưa tải xong.
 - Cache bản đồ trong add-on; Home Assistant chỉ nhận SVG đã dựng xong.
 - Theo dõi revision và tên bản đồ.
+- Giao diện Ingress hiển thị các phòng/khu vực trên bản đồ. Chạm vào đa giác
+  phòng hoặc nút tên phòng để gửi lệnh `spotArea`, robot chỉ dọn khu vực đó.
+- Có thể nhập tên dễ nhớ cho từng room ID ngay bên dưới nút dọn. Tên được lưu
+  mã hóa theo robot/map và tiếp tục dùng sau khi add-on khởi động lại.
+- Mỗi khu vực được đưa lên Home Assistant thành MQTT button **Dọn [tên khu
+  vực]**; đổi tên chỉ cập nhật nhãn, không tạo entity mới.
+- X1/T10 không bị gọi lại `getMapSubSet`: add-on lấy ID phòng và đa giác nhúng
+  sẵn từ `getMapSet`; firmware chỉ trả ID vẫn có nút **Khu vực N** để dọn riêng.
 - Khi robot di chuyển, event map từ Ecovacs dựng revision SVG mới. MQTT bridge
   chỉ phát bản mới nhất theo giới hạn `mqtt_map_min_interval`.
 - Chu kỳ map 30 giây chỉ là fallback khi event bị bỏ lỡ, không phải độ trễ
@@ -126,7 +134,8 @@ Các nút chỉ được tạo khi add-on xác nhận robot hỗ trợ capabilit
   quảng bá giặt giẻ, sấy giẻ hoặc vệ sinh đế khi lệnh chưa được xác minh.
 - Class `8bja83` của X1 OMNI nội địa được đăng ký trực tiếp trong
   `deebot-client`; profile giữ state V2, lệnh dọn và bản đồ nhưng không sinh
-  `getMapSubSet` vì firmware không phản hồi lệnh chi tiết subset này.
+  `getMapSubSet` vì firmware không phản hồi lệnh chi tiết subset này. ID phòng
+  từ `getMapSet` vẫn dùng được cho chức năng dọn riêng khu vực.
 - DEEBOT T10 OMNI được nhận diện tự động từ định danh sản phẩm bất biến của
   Ecovacs, gồm các biến thể OMNI, OMNIWHITE và CURIEOMNI đã xác nhận trong APK.
 - Class `hxm494` của T10 OMNI nội địa được đăng ký trực tiếp trong
@@ -159,11 +168,11 @@ Các nút chỉ được tạo khi add-on xác nhận robot hỗ trợ capabilit
 
 ## Cài add-on local
 
-1. Giải nén `ecovacs_cn_addon-repository-v1.2.7.zip`.
+1. Giải nén `ecovacs_cn_addon-repository-v1.2.9.zip`.
 2. Chép nguyên thư mục `ecovacs_cn_backend` vào `/addons/`.
 3. Mở Add-on Store và chọn **Reload/Check for updates**.
 4. Chọn **Ecovacs China Backend** và nhấn **Install/Rebuild**.
-5. Kiểm tra trang thông tin phải hiển thị phiên bản `1.2.7`.
+5. Kiểm tra trang thông tin phải hiển thị phiên bản `1.2.9`.
 6. Khởi động add-on và bật **Show in sidebar** nếu muốn.
 
 Không chép riêng `addon_app` hoặc `protocol_components`. Docker build cần toàn bộ
@@ -198,6 +207,8 @@ năng đọc lại credential Ecovacs đã lưu.
 4. Bấm **Lưu và kết nối MQTT**; bridge sẽ kết nối lại ngay.
 5. Nếu để trống địa chỉ, add-on thử MQTT service `mqtt:want` của Supervisor.
 6. Sau khi đăng nhập Ecovacs, device/entity tự xuất hiện qua MQTT Discovery.
+7. Sau khi bản đồ trả room ID, mỗi khu vực xuất hiện thêm một MQTT button; đặt
+   tên trong Ingress để button có tên phòng dễ nhận biết.
 
 Không cần API token để Home Assistant nhận entity. Nếu trước đây đã cài
 `custom_components/ecovacs_cn`, hãy xóa integration cũ, xóa thư mục đó rồi
@@ -260,7 +271,7 @@ Docker image hoặc backup `/data`. Không mở trực tiếp cổng `4545` ra I
 
 ### Docker báo thiếu protocol file
 
-Phải dùng bản `1.2.7` và chép nguyên thư mục add-on. Trong thư mục phải có:
+Phải dùng bản `1.2.9` và chép nguyên thư mục add-on. Trong thư mục phải có:
 
 ```text
 ecovacs_cn_backend/
@@ -278,7 +289,7 @@ kiểm tra version rồi chọn **Rebuild**.
 
 ### `ModuleNotFoundError: addon_app`
 
-Kiểm tra đang dùng `1.2.7`. Bản này cài package trực tiếp vào Python
+Kiểm tra đang dùng `1.2.9`. Bản này cài package trực tiếp vào Python
 `site-packages`; Docker build sẽ tự import-test package và không còn phụ thuộc
 `PYTHONPATH` hoặc quyền đọc `/app`.
 
@@ -301,8 +312,8 @@ Kiểm tra đang dùng `1.2.7`. Bản này cài package trực tiếp vào Pytho
 ## Gói phát hành
 
 - Mọi bản build mới được lưu trong thư mục `ket_qua` ở root workspace.
-- `ecovacs_cn_addon-repository-v1.2.7.zip`: add-on repository/local build.
-- `SHA256SUMS-v1.2.7.txt`: checksum của archive add-on.
+- `ecovacs_cn_addon-repository-v1.2.9.zip`: add-on repository/local build.
+- `SHA256SUMS-v1.2.9.txt`: checksum của archive add-on.
 
 Xem thêm hướng dẫn vận hành ngắn trong `DOCS.md` và lịch sử thay đổi trong
 `CHANGELOG.md`.
