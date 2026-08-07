@@ -1,6 +1,6 @@
 # Ecovacs China Backend cho Home Assistant
 
-Ecovacs China Backend `1.2.12` là add-on điều khiển robot Ecovacs tài khoản Trung
+Ecovacs China Backend `1.2.13` là add-on điều khiển robot Ecovacs tài khoản Trung
 Quốc và đưa entity vào Home Assistant trực tiếp bằng MQTT Discovery. Không cần
 cài custom component hoặc nhập cloud credential vào Home Assistant Core.
 
@@ -76,6 +76,11 @@ Tùy capability robot thực tế cung cấp, add-on có thể tạo qua MQTT Di
   có `areaSts` sẽ fallback về danh sách phòng đã chọn.
 - Khi robot di chuyển, event map từ Ecovacs dựng revision SVG mới. MQTT bridge
   chỉ phát bản mới nhất theo giới hạn `mqtt_map_min_interval`.
+- Add-on chỉ theo dõi vị trí/đường đi khi robot đang `cleaning` hoặc `returning`.
+  Khi robot dừng, tạm dừng hoặc đã về trạm, add-on lấy một bản đồ cuối trong 3
+  giây rồi bỏ các event vị trí rung nhẹ, tránh MQTT image cập nhật liên tục.
+- Event bản đồ tĩnh như mảnh nền, map info và khu vực vẫn được xử lý ở trạng
+  thái docked nên đổi bản đồ/phòng không bị bỏ sót.
 - Fallback 10 giây chỉ yêu cầu vị trí và đường đi động, không tải lại các mảnh
   nền tĩnh; MQTT map mặc định có thể phát bản mới sau tối thiểu 2 giây.
 
@@ -174,11 +179,11 @@ Các nút chỉ được tạo khi add-on xác nhận robot hỗ trợ capabilit
 
 ## Cài add-on local
 
-1. Giải nén `ecovacs_cn_addon-repository-v1.2.12.zip`.
+1. Giải nén `ecovacs_cn_addon-repository-v1.2.13.zip`.
 2. Chép nguyên thư mục `ecovacs_cn_backend` vào `/addons/`.
 3. Mở Add-on Store và chọn **Reload/Check for updates**.
 4. Chọn **Ecovacs China Backend** và nhấn **Install/Rebuild**.
-5. Kiểm tra trang thông tin phải hiển thị phiên bản `1.2.12`.
+5. Kiểm tra trang thông tin phải hiển thị phiên bản `1.2.13`.
 6. Khởi động add-on và bật **Show in sidebar** nếu muốn.
 
 Không chép riêng `addon_app` hoặc `protocol_components`. Docker build cần toàn bộ
@@ -277,7 +282,7 @@ Docker image hoặc backup `/data`. Không mở trực tiếp cổng `4545` ra I
 
 ### Docker báo thiếu protocol file
 
-Phải dùng bản `1.2.12` và chép nguyên thư mục add-on. Trong thư mục phải có:
+Phải dùng bản `1.2.13` và chép nguyên thư mục add-on. Trong thư mục phải có:
 
 ```text
 ecovacs_cn_backend/
@@ -295,7 +300,7 @@ kiểm tra version rồi chọn **Rebuild**.
 
 ### `ModuleNotFoundError: addon_app`
 
-Kiểm tra đang dùng `1.2.12`. Bản này cài package trực tiếp vào Python
+Kiểm tra đang dùng `1.2.13`. Bản này cài package trực tiếp vào Python
 `site-packages`; Docker build sẽ tự import-test package và không còn phụ thuộc
 `PYTHONPATH` hoặc quyền đọc `/app`.
 
@@ -318,8 +323,8 @@ Kiểm tra đang dùng `1.2.12`. Bản này cài package trực tiếp vào Pyth
 ## Gói phát hành
 
 - Mọi bản build mới được lưu trong thư mục `ket_qua` ở root workspace.
-- `ecovacs_cn_addon-repository-v1.2.12.zip`: add-on repository/local build.
-- `SHA256SUMS-v1.2.12.txt`: checksum của archive add-on.
+- `ecovacs_cn_addon-repository-v1.2.13.zip`: add-on repository/local build.
+- `SHA256SUMS-v1.2.13.txt`: checksum của archive add-on.
 
 Xem thêm hướng dẫn vận hành ngắn trong `DOCS.md` và lịch sử thay đổi trong
 `CHANGELOG.md`.
