@@ -1,6 +1,6 @@
 # Ecovacs China Backend cho Home Assistant
 
-Ecovacs China Backend `1.2.13` là add-on điều khiển robot Ecovacs tài khoản Trung
+Ecovacs China Backend `1.2.14` là add-on điều khiển robot Ecovacs tài khoản Trung
 Quốc và đưa entity vào Home Assistant trực tiếp bằng MQTT Discovery. Không cần
 cài custom component hoặc nhập cloud credential vào Home Assistant Core.
 
@@ -15,9 +15,9 @@ Ecovacs China cloud + MQTT
 Ecovacs Backend add-on :4545
   ├─ đăng nhập và lưu credential mã hóa
   ├─ nhận trạng thái robot từ Ecovacs MQTT
-  ├─ dựng/cache bản đồ SVG
+  ├─ đánh dấu map mới, chỉ dựng SVG khi cần
   ├─ kiểm tra và thực thi lệnh
-  └─ cache từng MQTT topic, chỉ publish khi giá trị đổi
+  └─ batch/cache MQTT, chỉ publish robot và giá trị đổi
             │ MQTT Discovery + retained state
             ▼
 Home Assistant MQTT integration
@@ -74,20 +74,25 @@ Tùy capability robot thực tế cung cấp, add-on có thể tạo qua MQTT Di
 - Sensor **Khu vực đang dọn** ghép `CleanInfo_V2.content.value` với `areaSts`;
   giá trị trạng thái `1` xác định đúng phòng robot đang xử lý. Firmware không
   có `areaSts` sẽ fallback về danh sách phòng đã chọn.
-- Khi robot di chuyển, event map từ Ecovacs dựng revision SVG mới. MQTT bridge
-  chỉ phát bản mới nhất theo giới hạn `mqtt_map_min_interval`.
+- Khi robot di chuyển, event map từ Ecovacs chỉ đánh dấu revision mới. SVG được
+  dựng lười khi MQTT hoặc API thật sự cần và chỉ phát bản mới nhất theo giới hạn
+  `mqtt_map_min_interval`.
 - Add-on chỉ theo dõi vị trí/đường đi khi robot đang `cleaning` hoặc `returning`.
   Khi robot dừng, tạm dừng hoặc đã về trạm, add-on lấy một bản đồ cuối trong 3
   giây rồi bỏ các event vị trí rung nhẹ, tránh MQTT image cập nhật liên tục.
 - Event bản đồ tĩnh như mảnh nền, map info và khu vực vẫn được xử lý ở trạng
   thái docked nên đổi bản đồ/phòng không bị bỏ sót.
-- Fallback 10 giây chỉ yêu cầu vị trí và đường đi động, không tải lại các mảnh
-  nền tĩnh; MQTT map mặc định có thể phát bản mới sau tối thiểu 2 giây.
+- Fallback 5 giây chỉ yêu cầu vị trí và đường đi động khi robot đang hoạt động,
+  không tải lại các mảnh nền tĩnh; MQTT map mặc định phát tối đa mỗi 5 giây.
 
 ### Realtime và tải Home Assistant
 
 - Mỗi sensor/control có topic riêng và cache payload riêng. Giá trị giống hệt
   lần trước không được publish lại.
+- Event thay đổi được gom trong cửa sổ 350 ms; bridge chỉ đọc/publish robot có
+  ID nằm trong batch thay vì quét lại toàn bộ robot.
+- MQTT Discovery được cache theo cấu trúc entity. Thay đổi pin, trạng thái hoặc
+  sensor value không dựng lại payload Discovery.
 - Vacuum entity không publish state `error`: bridge giữ trạng thái hợp lệ cuối
   cùng, hoặc dùng `idle` nếu vừa restart. Sensor **Lỗi** và **Trạng thái** vẫn
   giữ dữ liệu lỗi để chẩn đoán mà không làm rối automation dùng vacuum entity.
@@ -179,11 +184,11 @@ Các nút chỉ được tạo khi add-on xác nhận robot hỗ trợ capabilit
 
 ## Cài add-on local
 
-1. Giải nén `ecovacs_cn_addon-repository-v1.2.13.zip`.
+1. Giải nén `ecovacs_cn_addon-repository-v1.2.14.zip`.
 2. Chép nguyên thư mục `ecovacs_cn_backend` vào `/addons/`.
 3. Mở Add-on Store và chọn **Reload/Check for updates**.
 4. Chọn **Ecovacs China Backend** và nhấn **Install/Rebuild**.
-5. Kiểm tra trang thông tin phải hiển thị phiên bản `1.2.13`.
+5. Kiểm tra trang thông tin phải hiển thị phiên bản `1.2.14`.
 6. Khởi động add-on và bật **Show in sidebar** nếu muốn.
 
 Không chép riêng `addon_app` hoặc `protocol_components`. Docker build cần toàn bộ
@@ -235,7 +240,8 @@ Add-on mặc định ưu tiên tải nhẹ:
 - availability kép cho trạng thái bridge và từng robot;
 - reconnect broker theo exponential backoff tối đa 300 giây;
 - map chỉ publish bản mới nhất theo interval và giới hạn byte;
-- map động fallback 10 giây và full state fallback 120 giây;
+- map động fallback 5 giây, state lõi 120 giây, setting 600 giây và chẩn đoán
+  1200 giây;
 - bản đồ và trạng thái được cache, không tạo tiến trình phụ;
 - không dùng `host_network`, không privileged và không mở cổng host mặc định.
 
@@ -244,15 +250,18 @@ Options:
 | Option | Mặc định | Phạm vi | Công dụng |
 | --- | ---: | ---: | --- |
 | `log_level` | `info` | debug–error | Mức log của backend |
-| `map_refresh_interval` | `10` giây | 5–60 | Fallback hỏi vị trí và đường đi nếu event bị lỡ |
-| `state_refresh_interval` | `120` giây | 15–300 | Fallback yêu cầu toàn bộ trạng thái |
+| `map_refresh_interval` | `5` giây | 3–60 | Fallback hỏi vị trí và đường đi khi robot hoạt động |
+| `state_refresh_interval` | `120` giây | 15–300 | Fallback trạng thái hoạt động cốt lõi |
+| `settings_refresh_interval` | `600` giây | 300–1800 | Làm mới setting ít thay đổi như `border_spin` |
+| `diagnostic_refresh_interval` | `1200` giây | 900–3600 | Làm mới IP/Wi-Fi, OTA, tuổi thọ và tổng thống kê |
 | `mqtt_enabled` | `true` | true/false | Bật MQTT Discovery bridge |
 | `mqtt_map_enabled` | `true` | true/false | Publish ảnh SVG qua MQTT Image |
-| `mqtt_map_min_interval` | `2` giây | 1–60 | Khoảng cách tối thiểu giữa hai map publish |
+| `mqtt_map_min_interval` | `5` giây | 1–60 | Khoảng cách tối thiểu giữa hai map publish |
 | `mqtt_map_max_bytes` | `2000000` | 64000–10000000 | Bỏ qua map quá lớn để bảo vệ broker/Core |
+| `mqtt_batch_window_ms` | `350` ms | 100–2000 | Gom event gần nhau thành một lần publish |
 
-Máy yếu nên dùng map `15–20` giây và state `60` giây. Không bật debug lâu dài vì
-log nhiều hơn và có thể tăng I/O.
+Máy yếu nên dùng map `10–20` giây, setting `900` giây và chẩn đoán `1800` giây.
+Không bật debug lâu dài vì log nhiều hơn và có thể tăng I/O.
 
 ## Bảo mật và dữ liệu
 
@@ -282,7 +291,7 @@ Docker image hoặc backup `/data`. Không mở trực tiếp cổng `4545` ra I
 
 ### Docker báo thiếu protocol file
 
-Phải dùng bản `1.2.13` và chép nguyên thư mục add-on. Trong thư mục phải có:
+Phải dùng bản `1.2.14` và chép nguyên thư mục add-on. Trong thư mục phải có:
 
 ```text
 ecovacs_cn_backend/
@@ -300,7 +309,7 @@ kiểm tra version rồi chọn **Rebuild**.
 
 ### `ModuleNotFoundError: addon_app`
 
-Kiểm tra đang dùng `1.2.13`. Bản này cài package trực tiếp vào Python
+Kiểm tra đang dùng `1.2.14`. Bản này cài package trực tiếp vào Python
 `site-packages`; Docker build sẽ tự import-test package và không còn phụ thuộc
 `PYTHONPATH` hoặc quyền đọc `/app`.
 
@@ -323,8 +332,8 @@ Kiểm tra đang dùng `1.2.13`. Bản này cài package trực tiếp vào Pyth
 ## Gói phát hành
 
 - Mọi bản build mới được lưu trong thư mục `ket_qua` ở root workspace.
-- `ecovacs_cn_addon-repository-v1.2.13.zip`: add-on repository/local build.
-- `SHA256SUMS-v1.2.13.txt`: checksum của archive add-on.
+- `ecovacs_cn_addon-repository-v1.2.14.zip`: add-on repository/local build.
+- `SHA256SUMS-v1.2.14.txt`: checksum của archive add-on.
 
 Xem thêm hướng dẫn vận hành ngắn trong `DOCS.md` và lịch sử thay đổi trong
 `CHANGELOG.md`.
