@@ -21,10 +21,12 @@ AI Proxy Router combines multiple AI providers behind one OpenAI-compatible API,
 - Model `auto-ai` tự chọn nguồn Text/Vision phù hợp theo tình trạng thực tế.
 - Hỗ trợ nguồn dựng sẵn, Custom Endpoint và OpenAI Codex OAuth.
 - Codex OAuth có thể xử lý cả văn bản và ảnh qua cùng endpoint proxy.
+- Codex app-server chỉ chạy khi cần và tự nghỉ sau 120 giây không hoạt động để trả RAM cho Home Assistant.
 - Bolt Token Saver gồm RTK, Headroom, Caveman và Ponytail.
 - Proxy Key riêng cho từng ứng dụng, có hạn mức, rate limit, ngày hết hạn và bật/tắt nhanh.
 - Base URL có thể lưu theo hostname HASS ổn định, IP hiện tại, DNS nội bộ add-on hoặc URL tùy chỉnh.
-- Sơ đồ định tuyến realtime polling nhẹ 1,5 giây, hiển thị nguồn khỏe, request, độ trễ và luồng route đang hoạt động.
+- Sơ đồ định tuyến realtime polling nhẹ 2,5 giây, hiển thị nguồn khỏe, request, độ trễ và luồng route đang hoạt động.
+- Dashboard dùng CSS tĩnh nội bộ, biểu đồ CSS không phụ thuộc Tailwind CDN/Chart.js và chỉ dựng loại log phù hợp với màn hình hiện tại.
 - Dashboard song ngữ Việt/Anh, tối ưu thao tác chạm và chỉ mở qua Home Assistant Ingress.
 - Thống kê token/chi phí, kiểm tra nguồn, Telegram, backup/restore và debug bundle đã che bí mật.
 
@@ -239,9 +241,9 @@ Nếu client chạy trên thiết bị khác, bật port `1236`, sau đó thay `
 3. Sao chép mã thiết bị và mở liên kết xác thực được hiển thị.
 4. Đăng nhập tài khoản ChatGPT/OpenAI và xác nhận mã.
 5. Quay lại dashboard; trạng thái sẽ tự cập nhật và nguồn `codex-auto` được bật tự động.
-6. Có thể tải danh sách model và chọn model cụ thể, hoặc giữ `codex-auto` để tự chọn Text/Vision.
+6. Giữ `codex-auto` để tiết kiệm RAM, hoặc bấm **Tải model** rồi chọn model cụ thể.
 
-Thông tin OAuth được Codex CLI lưu trong vùng dữ liệu bền vững `/data/codex`. AI Proxy Router không hiển thị access token và không đưa token Codex vào file backup của router.
+Thông tin OAuth được Codex CLI lưu trong vùng dữ liệu bền vững `/data/codex`. AI Proxy Router không hiển thị access token và không đưa token Codex vào file backup của router. Việc mở dashboard và kiểm tra sức khỏe nền không còn khởi động Codex; app-server chỉ bật khi đăng nhập, tải model, kiểm tra sâu thủ công hoặc có request Codex, sau đó tự dừng sau 120 giây rảnh. Có thể đổi ngưỡng bằng biến môi trường `CODEX_IDLE_TIMEOUT_SECONDS` khi chạy ngoài Home Assistant Add-on.
 
 ### 10. Dùng Codex Vision
 
@@ -321,10 +323,12 @@ Headroom phải chạy như dịch vụ riêng có endpoint `/v1/compress`. Nh�
 - The `auto-ai` model selects a healthy Text/Vision source automatically.
 - Supports built-in providers, Custom Endpoints, and OpenAI Codex OAuth.
 - Codex OAuth supports both text and image requests through the same proxy endpoint.
+- Codex app-server starts on demand and returns its RAM after 120 idle seconds.
 - Bolt Token Saver includes RTK, Headroom, Caveman, and Ponytail.
 - Per-application Proxy Keys with budgets, rate limits, expiration dates, and enable/disable controls.
 - Persistent Base URL selection using the stable HASS hostname, current IP, internal add-on DNS, or a custom URL.
-- A lightweight 1.5-second live routing map with healthy-source, request, latency, and active-flow telemetry.
+- A lightweight 2.5-second live routing map with healthy-source, request, latency, and active-flow telemetry.
+- The dashboard uses local static CSS, a CSS-only usage chart, and renders only the log layout needed by the current screen.
 - Vietnamese/English dashboard with touch-friendly navigation, restricted to Home Assistant Ingress.
 - Token/cost statistics, provider checks, Telegram alerts, backup/restore, and a masked debug bundle.
 
@@ -539,9 +543,9 @@ If the client runs on another device, enable port `1236`, then replace `HOME_ASS
 3. Copy the device code and open the displayed verification link.
 4. Sign in to your ChatGPT/OpenAI account and confirm the code.
 5. Return to the dashboard; the status updates automatically and the `codex-auto` source is enabled.
-6. Load and select a specific model, or keep `codex-auto` for automatic Text/Vision selection.
+6. Keep `codex-auto` for the lowest RAM use, or click **Load models** and select a specific model.
 
-OAuth credentials are stored by the Codex CLI in persistent `/data/codex` storage. AI Proxy Router does not expose the access token or include the Codex token in router backups.
+OAuth credentials are stored by the Codex CLI in persistent `/data/codex` storage. AI Proxy Router does not expose the access token or include the Codex token in router backups. Opening the dashboard and background health checks no longer start Codex; app-server starts only for sign-in, model loading, manual deep checks, or Codex requests, then stops after 120 idle seconds. `CODEX_IDLE_TIMEOUT_SECONDS` can override the timeout when running outside the Home Assistant add-on.
 
 ### 10. Use Codex Vision
 
@@ -605,12 +609,12 @@ Headroom must run as a separate service exposing `/v1/compress`. Enter its servi
 - Port `1236` is disabled by default; if enabled, use it only for Proxy Key-protected `/v1/*` APIs and do not expose it directly to the Internet.
 - Never share upstream API keys; issue a separate Proxy Key per application and apply budgets/rate limits.
 - Regenerate a Proxy Key immediately if it may have leaked.
-- Treat full backup files as secrets before copying or sharing them
+- Treat full backup files as secrets before copying or sharing them.
 
 ---
 
 ## Phiên bản / Version
 
-Tài liệu này áp dụng cho AI Proxy Router `1.15.0`.
+Tài liệu này áp dụng cho AI Proxy Router `1.16.0`.
 
-This guide applies to AI Proxy Router `1.15.0`.
+This guide applies to AI Proxy Router `1.16.0`.

@@ -1,6 +1,6 @@
 name: "AI Proxy Router"
-description: "Xoay API Key, endpoint hostname ổn định, routing realtime, Text/Vision, Function Tools và JSON Schema."
-version: "1.15.0"
+description: "Xoay API Key, routing realtime tiết kiệm RAM, Text/Vision, Function Tools và JSON Schema."
+version: "1.16.0"
 slug: "ai_proxy_router"
 init: false
 arch:
