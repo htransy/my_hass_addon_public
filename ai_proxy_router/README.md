@@ -605,7 +605,7 @@ Headroom must run as a separate service exposing `/v1/compress`. Enter its servi
 - Port `1236` is disabled by default; if enabled, use it only for Proxy Key-protected `/v1/*` APIs and do not expose it directly to the Internet.
 - Never share upstream API keys; issue a separate Proxy Key per application and apply budgets/rate limits.
 - Regenerate a Proxy Key immediately if it may have leaked.
-- Treat full backup files as secrets before copying or sharing them.
+- Treat full backup files as secrets before copying or sharing them
 
 ---
 
