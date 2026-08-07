@@ -23,6 +23,8 @@ AI Proxy Router combines multiple AI providers behind one OpenAI-compatible API,
 - Codex OAuth có thể xử lý cả văn bản và ảnh qua cùng endpoint proxy.
 - Bolt Token Saver gồm RTK, Headroom, Caveman và Ponytail.
 - Proxy Key riêng cho từng ứng dụng, có hạn mức, rate limit, ngày hết hạn và bật/tắt nhanh.
+- Base URL có thể lưu theo hostname HASS ổn định, IP hiện tại, DNS nội bộ add-on hoặc URL tùy chỉnh.
+- Sơ đồ định tuyến realtime polling nhẹ 1,5 giây, hiển thị nguồn khỏe, request, độ trễ và luồng route đang hoạt động.
 - Dashboard song ngữ Việt/Anh, tối ưu thao tác chạm và chỉ mở qua Home Assistant Ingress.
 - Thống kê token/chi phí, kiểm tra nguồn, Telegram, backup/restore và debug bundle đã che bí mật.
 
@@ -69,12 +71,19 @@ Không đưa API key gốc cho ứng dụng bên ngoài. Hãy tạo Proxy Key ri
 3. Nhấn tạo mới và sao chép key dạng `sk-proxy-...`.
 4. Có thể tắt, hiện lại, tạo lại hoặc xóa từng Proxy Key trên dashboard.
 
-Thẻ **📡 Base URL Connect** tự hiển thị IP Home Assistant thực tế, Base URL, endpoint Chat Completions và endpoint Responses API. Mỗi dòng có nút sao chép một chạm.
+Thẻ **📡 Base URL Connect** cho phép chọn và lưu địa chỉ kết nối ổn định:
+
+- **Hostname HASS ổn định — khuyên dùng:** ví dụ `homeassistant.local`; không phải sửa endpoint khi DHCP đổi IP.
+- **IP HASS hiện tại:** dùng khi Home Assistant đã được đặt DHCP reservation/IP tĩnh.
+- **Hostname add-on nội bộ:** ví dụ `011a0c26-ai-proxy-router`; chỉ dùng giữa add-on/container trong mạng nội bộ Home Assistant, không dùng trực tiếp từ điện thoại hoặc máy tính LAN.
+- **Tùy chỉnh:** nhập IP tĩnh, DNS hoặc full Base URL riêng. Lựa chọn được lưu bền vững trong cấu hình add-on.
+
+Mỗi dòng Host/Base/Chat/Responses đều có nút sao chép một chạm.
 
 Base URL dùng cho client:
 
 ```text
-http://HOME_ASSISTANT_IP:1236/v1
+http://homeassistant.local:1236/v1
 ```
 
 Địa chỉ này chỉ hoạt động sau khi bật port `1236` trong cấu hình **Network** của add-on. `/v1/models`, `/v1/chat/completions` và `/v1/responses` đều yêu cầu Proxy Key.
@@ -82,13 +91,13 @@ http://HOME_ASSISTANT_IP:1236/v1
 Chat completions endpoint đầy đủ:
 
 ```text
-http://HOME_ASSISTANT_IP:1236/v1/chat/completions
+http://homeassistant.local:1236/v1/chat/completions
 ```
 
 Responses API endpoint:
 
 ```text
-http://HOME_ASSISTANT_IP:1236/v1/responses
+http://homeassistant.local:1236/v1/responses
 ```
 
 ### 6. Kiểm tra nhanh trên dashboard
@@ -96,6 +105,8 @@ http://HOME_ASSISTANT_IP:1236/v1/responses
 Tab kiểm tra không yêu cầu nhập token. Khi nhấn kiểm tra, add-on tự chọn một Proxy Key hợp lệ đang bật. Hãy tạo ít nhất một Proxy Key trước khi chạy test.
 
 Có ba chế độ: **Chat / Vision**, **Tool Calling** và **JSON Schema**. Tool mode chỉ hiển thị tên function cùng arguments do model tạo ra; add-on không thực thi function. JSON mode cho phép dán schema để kiểm tra failover structured output.
+
+Sơ đồ **🕸️ Định tuyến AI Proxy** cập nhật realtime mỗi 1,5 giây, giữ node ổn định để chuyển động không giật, đồng thời hiển thị luồng provider đang dùng, client, model, độ trễ, tổng request và tình trạng nguồn.
 
 ### 7. Gọi API tương thích OpenAI
 
@@ -312,6 +323,8 @@ Headroom phải chạy như dịch vụ riêng có endpoint `/v1/compress`. Nh�
 - Codex OAuth supports both text and image requests through the same proxy endpoint.
 - Bolt Token Saver includes RTK, Headroom, Caveman, and Ponytail.
 - Per-application Proxy Keys with budgets, rate limits, expiration dates, and enable/disable controls.
+- Persistent Base URL selection using the stable HASS hostname, current IP, internal add-on DNS, or a custom URL.
+- A lightweight 1.5-second live routing map with healthy-source, request, latency, and active-flow telemetry.
 - Vietnamese/English dashboard with touch-friendly navigation, restricted to Home Assistant Ingress.
 - Token/cost statistics, provider checks, Telegram alerts, backup/restore, and a masked debug bundle.
 
@@ -358,24 +371,31 @@ Do not distribute upstream provider keys. Create a separate Proxy Key for each c
 3. Create the key and copy the generated `sk-proxy-...` value.
 4. Each Proxy Key can be disabled, revealed, regenerated, or deleted from the dashboard.
 
-The **📡 Base URL Connect** card automatically shows the Home Assistant IP, Base URL, Chat Completions endpoint, and Responses API endpoint. Each row has a one-click copy button.
+The **📡 Base URL Connect** card can persist one of these endpoint modes:
+
+- **Stable HASS hostname — recommended:** for example `homeassistant.local`; DHCP IP changes do not require client reconfiguration.
+- **Current HASS IP:** suitable when Home Assistant has a DHCP reservation/static IP.
+- **Internal add-on hostname:** for example `011a0c26-ai-proxy-router`; usable only between Home Assistant add-ons/containers, not directly from LAN phones or computers.
+- **Custom:** a static IP, DNS hostname, or full custom Base URL.
+
+Host, Base URL, Chat Completions, and Responses rows provide one-click copying.
 
 Client Base URL:
 
 ```text
-http://HOME_ASSISTANT_IP:1236/v1
+http://homeassistant.local:1236/v1
 ```
 
 Full chat completions endpoint:
 
 ```text
-http://HOME_ASSISTANT_IP:1236/v1/chat/completions
+http://homeassistant.local:1236/v1/chat/completions
 ```
 
 Responses API endpoint:
 
 ```text
-http://HOME_ASSISTANT_IP:1236/v1/responses
+http://homeassistant.local:1236/v1/responses
 ```
 
 These addresses work only after port `1236` is enabled in the add-on **Network** settings. `/v1/models`, `/v1/chat/completions`, and `/v1/responses` require a Proxy Key.
@@ -385,6 +405,8 @@ These addresses work only after port `1236` is enabled in the add-on **Network**
 The test tab no longer asks for a token. When you click Test, the add-on automatically selects an enabled, valid Proxy Key. Create at least one Proxy Key before running a test.
 
 Three modes are available: **Chat / Vision**, **Tool Calling**, and **JSON Schema**. Tool mode displays the function name and generated arguments but never executes the function. JSON mode accepts a schema for structured-output failover testing.
+
+The **🕸️ AI Proxy routing map** polls lightweight live state every 1.5 seconds without rebuilding unchanged nodes. It displays the active provider/client/model flow, latency, request count, and source health.
 
 ### 7. Call the OpenAI-compatible API
 
@@ -589,6 +611,6 @@ Headroom must run as a separate service exposing `/v1/compress`. Enter its servi
 
 ## Phiên bản / Version
 
-Tài liệu này áp dụng cho AI Proxy Router `1.14.0`.
+Tài liệu này áp dụng cho AI Proxy Router `1.15.0`.
 
-This guide applies to AI Proxy Router `1.14.0`.
+This guide applies to AI Proxy Router `1.15.0`.
