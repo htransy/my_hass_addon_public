@@ -1,15 +1,16 @@
-# Ecovacs China Backend cho Home Assistant
+# Ecovacs đa vùng Backend cho Home Assistant
 
-Ecovacs China Backend `1.2.14` là add-on điều khiển robot Ecovacs tài khoản Trung
-Quốc và đưa entity vào Home Assistant trực tiếp bằng MQTT Discovery. Không cần
-cài custom component hoặc nhập cloud credential vào Home Assistant Core.
+Ecovacs Backend `1.2.18` là add-on điều khiển robot từ nhiều tài khoản Ecovacs
+China và quốc tế cùng lúc, sau đó đưa entity vào Home Assistant trực tiếp bằng
+MQTT Discovery. Không cần cài custom component hoặc nhập cloud credential vào
+Home Assistant Core.
 
 Đây không phải phần mềm chính thức của Ecovacs.
 
 ## Kiến trúc
 
 ```text
-Ecovacs China cloud + MQTT
+Ecovacs China/international cloud + MQTT
             │
             ▼
 Ecovacs Backend add-on :4545
@@ -31,13 +32,24 @@ Home Assistant MQTT integration
 
 ### Đăng nhập Ecovacs trong add-on
 
-- Ecovacs ID và mật khẩu.
-- Số điện thoại và mật khẩu.
-- Số điện thoại và mã SMS.
+- Chạy đồng thời nhiều tài khoản; mỗi tài khoản có cloud controller, Ecovacs
+  MQTT và vòng reconnect riêng.
+- Tài khoản China: Ecovacs ID + mật khẩu, số điện thoại + mật khẩu hoặc SMS.
+- Tài khoản quốc tế: Ecovacs ID/email + mật khẩu và mã quốc gia ISO 2 ký tự như
+  `VN`, `US`, `DE`; tài khoản China vẫn dùng tab China riêng.
 - Số điện thoại Trung Quốc nhập nhầm ở tab Ecovacs ID được tự chuyển sang
   luồng điện thoại, không làm thay đổi cách xử lý ID thông thường.
-- Lưu phiên đăng nhập để tự kết nối lại sau khi khởi động add-on.
-- Xóa toàn bộ tài khoản Ecovacs khỏi add-on bằng giao diện quản trị.
+- Tự migration tài khoản China của bản cũ, giữ nguyên device ID và dữ liệu đã
+  lưu để entity không bị đổi sau khi nâng cấp.
+- Lưu credential mã hóa để tự kết nối lại sau khi khởi động add-on.
+- Kết nối lại hoặc xóa từng tài khoản; vẫn có nút thao tác tất cả tài khoản.
+- Sau khi credential được cloud xác thực, API trả ngay với trạng thái **Đang
+  kết nối**; MQTT realtime và tải robot tiếp tục chạy nền, tránh form chờ tới
+  timeout rồi người dùng đăng nhập lặp lại.
+- Các tài khoản kết nối cloud song song thay vì chờ tuần tự. Add-on bỏ lần MQTT
+  handshake kiểm tra trùng trước khi mở kết nối realtime chính.
+- Subscription gặp `Operation timed out` được giữ trong hàng đợi và tự thử lại
+  sau reconnect, không còn mất đăng ký robot giữa chừng.
 
 ### Sensor trạng thái
 
@@ -67,8 +79,9 @@ Tùy capability robot thực tế cung cấp, add-on có thể tạo qua MQTT Di
   được lưu mã hóa theo robot/map và không bị mất khi add-on khởi động lại.
 - Mỗi khu vực được đưa lên Home Assistant thành MQTT button **Dọn [tên khu
   vực]**; đổi tên chỉ cập nhật nhãn, unique ID của entity vẫn giữ nguyên.
-- X1/T10 không bị gọi lại `getMapSubSet`: add-on lấy ID phòng và đa giác nhúng
-  sẵn từ `getMapSet`; firmware chỉ trả ID vẫn có nút **Khu vực N** để dọn riêng.
+- X1/X1 PRO/T10 không bị gọi lại `getMapSubSet`: add-on lấy ID phòng và đa giác
+  nhúng sẵn từ `getMapSet`; firmware chỉ trả ID vẫn có nút **Khu vực N** để dọn
+  riêng.
 - Với X1/T10 dùng bản đồ mới, add-on đọc thêm `getMapSet_V2` giống app China để
   lấy tên phòng và dữ liệu khu vực mà không gọi lệnh subset dễ timeout.
 - Sensor **Khu vực đang dọn** ghép `CleanInfo_V2.content.value` với `areaSts`;
@@ -160,6 +173,9 @@ Các nút chỉ được tạo khi add-on xác nhận robot hỗ trợ capabilit
   thiết bị sang giao thức live V2, không gọi `getWorkMode` và không tiếp tục gọi
   `getMapSubSet` sau map metadata vì firmware `hxm494` không phản hồi hai lệnh
   này; capability trạm OMNI và bản đồ nền vẫn được giữ.
+- X1/X1 PRO/T10 OMNI được nhận diện bằng tên sản phẩm hoặc class chưa xác minh
+  cũng không quảng bá Work Mode. Chỉ hai class X1 `8onkgl` và `1vxt52` đã xác
+  minh còn gọi `getWorkMode`, tránh warning timeout lặp trên firmware bảo thủ.
 - T10 Turbo/Newton và model OMNI không cùng dòng không bị nhận nhầm thành T10
   OMNI.
 - Với class nội địa chưa có trực tiếp trong `deebot-client`, add-on chuẩn hóa
@@ -171,24 +187,35 @@ Các nút chỉ được tạo khi add-on xác nhận robot hỗ trợ capabilit
   dưới dạng sensor metadata; add-on không quảng bá lệnh hoặc bản đồ chưa được
   xác minh, và một thiết bị kiểu này không còn làm lỗi đăng nhập cả tài khoản.
 
+### Hỗ trợ tài khoản quốc tế
+
+- Add-on dùng luồng xác thực, REST endpoint và Ecovacs MQTT chuẩn của
+  `deebot-client` theo đúng quốc gia đã nhập.
+- Robot quốc tế có class được thư viện nhận diện sẽ có trạng thái và lệnh theo
+  capability thực tế giống luồng chuẩn của Ecovacs.
+- Class quốc tế chưa được nhận diện chỉ xuất hiện dạng metadata để tránh áp
+  profile/lệnh China sai thiết bị; log class đó có thể dùng để bổ sung sau.
+- Nếu cùng một robot xuất hiện trong nhiều tài khoản, snapshot của tài khoản
+  được thêm trước sẽ được dùng để tránh tạo entity MQTT trùng DID.
+
 ## Yêu cầu
 
 - Home Assistant OS hoặc Supervised có hỗ trợ local add-on/app.
 - Một MQTT broker có thể truy cập từ container add-on; có thể dùng broker bên
   ngoài hoặc MQTT service do Supervisor cung cấp.
 - Kiến trúc `amd64` hoặc `aarch64`.
-- Robot đã được thêm vào Ecovacs Home vùng Trung Quốc.
-- Home Assistant có kết nối Internet tới Ecovacs China cloud.
+- Robot đã được thêm vào đúng vùng tài khoản Ecovacs China hoặc quốc tế.
+- Home Assistant có kết nối Internet tới Ecovacs cloud của các vùng đã dùng.
 - Python của add-on là `3.14`; Home Assistant Core không cần cài thư viện cloud
   Ecovacs hoặc custom component.
 
 ## Cài add-on local
 
-1. Giải nén `ecovacs_cn_addon-repository-v1.2.14.zip`.
+1. Giải nén `ecovacs_cn_addon-repository-v1.2.18.zip`.
 2. Chép nguyên thư mục `ecovacs_cn_backend` vào `/addons/`.
 3. Mở Add-on Store và chọn **Reload/Check for updates**.
 4. Chọn **Ecovacs China Backend** và nhấn **Install/Rebuild**.
-5. Kiểm tra trang thông tin phải hiển thị phiên bản `1.2.14`.
+5. Kiểm tra trang thông tin phải hiển thị phiên bản `1.2.18`.
 6. Khởi động add-on và bật **Show in sidebar** nếu muốn.
 
 Không chép riêng `addon_app` hoặc `protocol_components`. Docker build cần toàn bộ
@@ -207,10 +234,13 @@ Mã khởi tạo chỉ dùng cho installation chưa được thiết lập và b
 ## Đăng nhập tài khoản Ecovacs
 
 1. Đăng nhập quản trị add-on bằng mật khẩu đã đặt.
-2. Chọn **Ecovacs ID**, **Điện thoại + mật khẩu** hoặc **SMS**.
-3. Nhập thông tin trực tiếp trong giao diện add-on.
-4. Đợi trạng thái chuyển sang `connected`.
-5. Nếu cloud/MQTT lỗi tạm thời, dùng nút **Kết nối lại**.
+2. Với tài khoản China, chọn **Ecovacs ID**, **Điện thoại** hoặc **SMS**.
+3. Với tài khoản quốc tế, chọn **Quốc tế**, nhập mã quốc gia ISO 2 ký tự nơi
+   tài khoản đăng ký, Ecovacs ID/email và mật khẩu.
+4. Có thể lặp lại để thêm nhiều tài khoản; danh sách bên dưới hiển thị trạng
+   thái, vùng và số robot của từng tài khoản.
+5. Đợi tài khoản chuyển sang `connected`. Nếu cloud/MQTT lỗi tạm thời, dùng nút
+   reconnect của riêng tài khoản đó hoặc **Kết nối lại tất cả**.
 
 Mật khẩu và mã SMS được xóa khỏi form sau khi gửi. Giao diện/API không có chức
 năng đọc lại credential Ecovacs đã lưu.
@@ -291,7 +321,7 @@ Docker image hoặc backup `/data`. Không mở trực tiếp cổng `4545` ra I
 
 ### Docker báo thiếu protocol file
 
-Phải dùng bản `1.2.14` và chép nguyên thư mục add-on. Trong thư mục phải có:
+Phải dùng bản `1.2.18` và chép nguyên thư mục add-on. Trong thư mục phải có:
 
 ```text
 ecovacs_cn_backend/
@@ -309,16 +339,29 @@ kiểm tra version rồi chọn **Rebuild**.
 
 ### `ModuleNotFoundError: addon_app`
 
-Kiểm tra đang dùng `1.2.14`. Bản này cài package trực tiếp vào Python
+Kiểm tra đang dùng `1.2.18`. Bản này cài package trực tiếp vào Python
 `site-packages`; Docker build sẽ tự import-test package và không còn phụ thuộc
 `PYTHONPATH` hoặc quyền đọc `/app`.
 
 ### Add-on kết nối nhưng không có robot
 
-- Kiểm tra robot xuất hiện trong Ecovacs Home vùng Trung Quốc.
-- Kiểm tra phương thức đăng nhập và mã vùng.
-- Chọn **Kết nối lại** và xem log cloud/MQTT.
+- Kiểm tra robot xuất hiện trong Ecovacs Home đúng vùng tài khoản.
+- Tài khoản China dùng ba tab China; tài khoản quốc tế phải dùng tab **Quốc
+  tế** và mã quốc gia ISO đúng nơi tài khoản đăng ký.
+- Chọn reconnect của tài khoản lỗi và xem log cloud/MQTT.
+- Robot quốc tế class chưa được `deebot-client` nhận diện chỉ có metadata, chưa
+  có vacuum entity/lệnh cho tới khi profile tương ứng được hỗ trợ.
 - Không chia sẻ log debug trước khi tự kiểm tra dữ liệu nhạy cảm.
+
+### Ecovacs MQTT báo `Operation timed out`
+
+- Bản `1.2.18` không chờ MQTT hoàn tất trong request đăng nhập và không tạo
+  handshake kiểm tra trùng, nên giao diện sẽ trả nhanh sau khi xác thực account.
+- MQTT client vẫn retry mỗi 5 giây theo thư viện Ecovacs. Subscription chưa gửi
+  xong được giữ lại qua lần reconnect kế tiếp, không cần nhập lại tài khoản.
+- Warning có thể xuất hiện khi đường truyền tới broker Ecovacs quốc tế/China bị
+  chập chờn, nhưng không còn biến thành `Ecovacs account login failed` chỉ vì
+  MQTT realtime đang kết nối chậm.
 
 ### MQTT không tạo entity
 
@@ -332,8 +375,8 @@ Kiểm tra đang dùng `1.2.14`. Bản này cài package trực tiếp vào Pyth
 ## Gói phát hành
 
 - Mọi bản build mới được lưu trong thư mục `ket_qua` ở root workspace.
-- `ecovacs_cn_addon-repository-v1.2.14.zip`: add-on repository/local build.
-- `SHA256SUMS-v1.2.14.txt`: checksum của archive add-on.
+- `ecovacs_cn_addon-repository-v1.2.18.zip`: add-on repository/local build.
+- `SHA256SUMS-v1.2.18.txt`: checksum của archive add-on.
 
 Xem thêm hướng dẫn vận hành ngắn trong `DOCS.md` và lịch sử thay đổi trong
 `CHANGELOG.md`.
