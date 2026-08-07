@@ -1,6 +1,6 @@
 # Ecovacs đa vùng Backend cho Home Assistant
 
-Ecovacs Backend `1.2.18` là add-on điều khiển robot từ nhiều tài khoản Ecovacs
+Ecovacs Backend `1.2.19` là add-on điều khiển robot từ nhiều tài khoản Ecovacs
 China và quốc tế cùng lúc, sau đó đưa entity vào Home Assistant trực tiếp bằng
 MQTT Discovery. Không cần cài custom component hoặc nhập cloud credential vào
 Home Assistant Core.
@@ -115,6 +115,12 @@ Tùy capability robot thực tế cung cấp, add-on có thể tạo qua MQTT Di
   nhật; kích thước và tần suất map đều có giới hạn.
 - Lỗi broker, DNS hoặc credential MQTT chỉ làm bridge reconnect theo backoff;
   không được ném ngược vào web server, watchdog hoặc Home Assistant Core.
+- Backoff MQTT Home Assistant tự về 2 giây sau một phiên kết nối thành công;
+  warning mạng/command trùng nội dung chỉ ghi lại mỗi 5 phút để giảm log I/O.
+- Watchdog kiểm tra Ecovacs MQTT mỗi 30 giây; lỗi refresh/map của một robot được
+  cô lập để không dừng polling và realtime của các robot còn lại.
+- Cache map MQTT chỉ giữ digest ngắn thay vì thêm một bản SVG lớn; cache robot
+  đã xóa và manifest Discovery không đổi được dọn/không ghi lại xuống đĩa.
 - Command MQTT được xử lý tuần tự, giới hạn 4 KiB, bỏ qua retained command và
   tiếp tục đi qua allow-list/type validation của backend.
 - Sau login mật khẩu/SMS, add-on chuyển thẳng authenticator đã xác thực sang
@@ -211,11 +217,11 @@ Các nút chỉ được tạo khi add-on xác nhận robot hỗ trợ capabilit
 
 ## Cài add-on local
 
-1. Giải nén `ecovacs_cn_addon-repository-v1.2.18.zip`.
+1. Giải nén `ecovacs_cn_addon-repository-v1.2.19.zip`.
 2. Chép nguyên thư mục `ecovacs_cn_backend` vào `/addons/`.
 3. Mở Add-on Store và chọn **Reload/Check for updates**.
 4. Chọn **Ecovacs China Backend** và nhấn **Install/Rebuild**.
-5. Kiểm tra trang thông tin phải hiển thị phiên bản `1.2.18`.
+5. Kiểm tra trang thông tin phải hiển thị phiên bản `1.2.19`.
 6. Khởi động add-on và bật **Show in sidebar** nếu muốn.
 
 Không chép riêng `addon_app` hoặc `protocol_components`. Docker build cần toàn bộ
@@ -268,11 +274,14 @@ Add-on mặc định ưu tiên tải nhẹ:
 - một MQTT bridge nền tách lỗi khỏi web server và cloud controller;
 - mỗi topic chỉ publish khi payload thực sự thay đổi;
 - availability kép cho trạng thái bridge và từng robot;
-- reconnect broker theo exponential backoff tối đa 300 giây;
+- reconnect broker theo exponential backoff tối đa 300 giây và reset về 2 giây
+  sau khi từng kết nối thành công;
 - map chỉ publish bản mới nhất theo interval và giới hạn byte;
 - map động fallback 5 giây, state lõi 120 giây, setting 600 giây và chẩn đoán
   1200 giây;
 - bản đồ và trạng thái được cache, không tạo tiến trình phụ;
+- Ingress poll 15 giây, dừng khi tab ẩn và không tạo request refresh chồng nhau;
+- warning mạng lặp được giới hạn theo cửa sổ 5 phút để tránh traceback liên tục;
 - không dùng `host_network`, không privileged và không mở cổng host mặc định.
 
 Options:
@@ -321,7 +330,7 @@ Docker image hoặc backup `/data`. Không mở trực tiếp cổng `4545` ra I
 
 ### Docker báo thiếu protocol file
 
-Phải dùng bản `1.2.18` và chép nguyên thư mục add-on. Trong thư mục phải có:
+Phải dùng bản `1.2.19` và chép nguyên thư mục add-on. Trong thư mục phải có:
 
 ```text
 ecovacs_cn_backend/
@@ -339,7 +348,7 @@ kiểm tra version rồi chọn **Rebuild**.
 
 ### `ModuleNotFoundError: addon_app`
 
-Kiểm tra đang dùng `1.2.18`. Bản này cài package trực tiếp vào Python
+Kiểm tra đang dùng `1.2.19`. Bản này cài package trực tiếp vào Python
 `site-packages`; Docker build sẽ tự import-test package và không còn phụ thuộc
 `PYTHONPATH` hoặc quyền đọc `/app`.
 
@@ -355,7 +364,7 @@ Kiểm tra đang dùng `1.2.18`. Bản này cài package trực tiếp vào Pyth
 
 ### Ecovacs MQTT báo `Operation timed out`
 
-- Bản `1.2.18` không chờ MQTT hoàn tất trong request đăng nhập và không tạo
+- Bản `1.2.19` không chờ MQTT hoàn tất trong request đăng nhập và không tạo
   handshake kiểm tra trùng, nên giao diện sẽ trả nhanh sau khi xác thực account.
 - MQTT client vẫn retry mỗi 5 giây theo thư viện Ecovacs. Subscription chưa gửi
   xong được giữ lại qua lần reconnect kế tiếp, không cần nhập lại tài khoản.
@@ -375,8 +384,8 @@ Kiểm tra đang dùng `1.2.18`. Bản này cài package trực tiếp vào Pyth
 ## Gói phát hành
 
 - Mọi bản build mới được lưu trong thư mục `ket_qua` ở root workspace.
-- `ecovacs_cn_addon-repository-v1.2.18.zip`: add-on repository/local build.
-- `SHA256SUMS-v1.2.18.txt`: checksum của archive add-on.
+- `ecovacs_cn_addon-repository-v1.2.19.zip`: add-on repository/local build.
+- `SHA256SUMS-v1.2.19.txt`: checksum của archive add-on.
 
 Xem thêm hướng dẫn vận hành ngắn trong `DOCS.md` và lịch sử thay đổi trong
 `CHANGELOG.md`.
