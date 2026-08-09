@@ -1,0 +1,33 @@
+name: "Chấm Công ZKTeco"
+version: "2.0.5"
+slug: "cham_cong_zkteco"
+description: "Quản lý nhân viên và bảng chấm công ZKTeco qua Home Assistant"
+arch:
+  - amd64
+  - aarch64
+startup: application
+boot: auto
+init: false
+ingress: true
+ingress_port: 8765
+ingress_stream: true
+panel_icon: "mdi:clock-check-outline"
+panel_title: "Chấm công"
+panel_admin: true
+watchdog: "http://[HOST]:[PORT:8765]/api/health"
+backup: cold
+options:
+  zk_ip: "192.168.1.115"
+  zk_port: 4370
+  zk_password: 0
+  zk_timeout: 8
+  force_udp: false
+  omit_ping: false
+schema:
+  zk_ip: str
+  zk_port: port
+  zk_password: int
+  zk_timeout: int
+  force_udp: bool
+  omit_ping: bool
+image: "ghcr.io/trankhanhduy2929-beep/cham_cong_zkteco-{arch}"
